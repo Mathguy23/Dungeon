@@ -94,6 +94,9 @@ function calculate_blind_effect(key, context)
 end
 
 function add_dungeon_attack()
+    if G.GAME.blind.chips <= G.GAME.chips then
+        return
+    end
     local index = -1
     for i = 1, #G.GAME.blind_attacks do
         if G.GAME.blind_attacks[i] == "blank" then
@@ -102,14 +105,23 @@ function add_dungeon_attack()
         end
     end
     if index == -1 then
+        local pool1 = {}
         index = math.min(#G.GAME.blind_attacks, 1 + math.floor((#G.GAME.blind_attacks) * pseudorandom('attack')))
     end
     local pool = {}
     local total = 0
     for i, j in pairs(G.BL_EFFECT_PATTERNS[G.GAME.blind.config.blind.key] or G.BL_EFFECT_PATTERNS['bl_boss']) do
         if i ~= G.GAME.blind_attacks[index] then
-            total = total + j.weight
-            table.insert(pool, {key = i, weight = j.weight})
+            local valid = true
+            if i == 'raise_1' and (G.GAME.blind.chips / 1.2 <= G.GAME.chips) then
+                valid = false
+            elseif i == 'raise_2' and (G.GAME.blind.chips / 1.5 <= G.GAME.chips) then
+                valid = false
+            end
+            if valid then
+                total = total + j.weight
+                table.insert(pool, {key = i, weight = j.weight})
+            end
         end
     end
     local picked = total * pseudorandom('dungeon')
