@@ -16,7 +16,88 @@ end
 
 SMODS.Atlas({ key = "attacks", atlas_table = "ASSET_ATLAS", path = "attacks.png", px = 34, py = 34})
 
-Attack = Card:extend()
+SMODS.Atlas({ key = "blinds", atlas_table = "ANIMATION_ATLAS", path = "blinds.png", px = 34, py = 34, frames = 21 })
+
+SMODS.Atlas({ key = "blinds2", atlas_table = "ANIMATION_ATLAS", path = "blinds2.png", px = 34, py = 34, frames = 21 })
+
+SMODS.Blind	{
+    key = 'scarlet_spider',
+    config = {},
+    boss = {showdown = true, min = 2, max = 10},
+    showdown = true, 
+    boss_colour = HEX("ff2400"),
+    atlas = "blinds",
+    pos = { x = 0, y = 0},
+    name = 'Scarlet Spider',
+    vars = {},
+    dollars = 8,
+    mult = 2,
+    in_pool = function(self)
+        return false
+    end,
+    set_blind = function(self, reset, silent)
+        if not reset then
+            ease_hands_played(4)
+        end
+    end,
+    disable = function(self)
+        ease_hands_played(-4)
+    end,
+    discovered = true,
+}
+
+SMODS.Blind	{
+    key = 'string',
+    config = {},
+    boss = {min = 2, max = 10},
+    boss_colour = HEX("7ca4a1"),
+    atlas = "blinds2",
+    pos = { x = 0, y = 0},
+    name = 'The String',
+    vars = {},
+    dollars = 8,
+    mult = 2,
+    in_pool = function(self)
+        return false
+    end,
+    drawn_to_hand = function(self)
+        if G.GAME.blind.prepped then
+            G.GAME.blind.prepped = nil
+            local any_forced = 0
+            for k, v in ipairs(G.hand.cards) do
+                if v.ability.forced_selection then
+                    any_forced = any_forced + 1
+                end
+            end
+            if any_forced < 2 then 
+                local pool = {}
+                for i = 1, #G.hand.cards do
+                    if not G.hand.cards[i].ability.forced_selection then
+                        table.insert(pool, G.hand.cards[i])
+                    end
+                end
+                G.hand:unhighlight_all()
+                for i = 1, 2 - any_forced do
+                    if #pool > 0 then
+                        local forced_card, index = pseudorandom_element(pool, pseudoseed('ring'))
+                        forced_card.ability.forced_selection = true
+                        G.hand:add_to_highlighted(forced_card)
+                        table.remove(pool, index)
+                    end
+                end
+            end
+        end
+    end,
+    press_play  = function(self)
+        G.GAME.blind.prepped = true
+    end,
+    disable = function(self)
+        for k, v in ipairs(G.playing_cards) do
+            v.ability.forced_selection = nil
+        end
+    end,
+    discovered = true,
+}
 
 local old_HUD = create_UIBox_HUD_blind
 function create_UIBox_HUD_blind()
@@ -77,6 +158,12 @@ function calculate_blind_effect(key, context)
         elseif (key == 'raise_1') or (key == 'raise_2') then
             G.GAME.blind.chips = G.GAME.blind.chips / ability_table.size
             G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+        elseif (key == 'ring_1') or (key == 'ring_2') then
+            for k, v in ipairs(G.playing_cards) do
+                if v.ability.forced_selection == key .. tostring(context.index) then
+                    v.ability.forced_selection = nil
+                end
+            end
         end
     elseif context.add then
         if (key == 'debuff_1') or (key == 'debuff_2') then
@@ -89,6 +176,54 @@ function calculate_blind_effect(key, context)
         elseif (key == 'raise_1') or (key == 'raise_2') then
             G.GAME.blind.chips = G.GAME.blind.chips * ability_table.size
             G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+        elseif (key == 'ring_1') or (key == 'ring_2') then
+            local any_forced = 0
+            for k, v in ipairs(G.hand.cards) do
+                if v.ability.forced_selection == key .. tostring(context.index) then
+                    any_forced = any_forced + 1
+                end
+            end
+            if any_forced < ability_table.cards then 
+                local pool = {}
+                for i = 1, #G.hand.cards do
+                    table.insert(pool, G.hand.cards[i])
+                end
+                G.hand:unhighlight_all()
+                for i = 1, ability_table.cards - any_forced do
+                    if #pool > 0 then
+                        local forced_card, index = pseudorandom_element(pool, pseudoseed('ring'))
+                        forced_card.ability.forced_selection = key .. tostring(context.index)
+                        G.hand:add_to_highlighted(forced_card)
+                        table.remove(pool, index)
+                    end
+                end
+            end
+        end
+    elseif context.drawn_to_hand then
+        if (key == 'ring_1') or (key == 'ring_2') then
+            local any_forced = 0
+            for k, v in ipairs(G.hand.cards) do
+                if v.ability.forced_selection == key .. tostring(context.index) then
+                    any_forced = any_forced + 1
+                end
+            end
+            if any_forced < ability_table.cards then 
+                local pool = {}
+                for i = 1, #G.hand.cards do
+                    if not G.hand.cards[i].ability.forced_selection then
+                        table.insert(pool, G.hand.cards[i])
+                    end
+                end
+                G.hand:unhighlight_all()
+                for i = 1, ability_table.cards - any_forced do
+                    if #pool > 0 then
+                        local forced_card, index = pseudorandom_element(pool, pseudoseed('ring'))
+                        forced_card.ability.forced_selection = key .. tostring(context.index)
+                        G.hand:add_to_highlighted(forced_card)
+                        table.remove(pool, index)
+                    end
+                end
+            end
         end
     end
 end
@@ -108,6 +243,14 @@ function add_dungeon_attack()
         local pool1 = {}
         index = math.min(#G.GAME.blind_attacks, 1 + math.floor((#G.GAME.blind_attacks) * pseudorandom('attack')))
     end
+    local forced_selection_count = 0
+    for i, j in ipairs(G.GAME.blind_attacks) do
+        if j == 'ring_1' then
+            forced_selection_count = forced_selection_count + 1
+        elseif j == 'ring_2' then
+            forced_selection_count = forced_selection_count + 2
+        end
+    end
     local pool = {}
     local total = 0
     for i, j in pairs(G.BL_EFFECT_PATTERNS[G.GAME.blind.config.blind.key] or G.BL_EFFECT_PATTERNS['bl_boss']) do
@@ -116,6 +259,10 @@ function add_dungeon_attack()
             if i == 'raise_1' and (G.GAME.blind.chips / 1.2 <= G.GAME.chips) then
                 valid = false
             elseif i == 'raise_2' and (G.GAME.blind.chips / 1.5 <= G.GAME.chips) then
+                valid = false
+            elseif i == 'ring_1' and (forced_selection_count > 2) then
+                valid = false
+            elseif i == 'ring_2' and (forced_selection_count > 1) then
                 valid = false
             end
             if valid then
@@ -373,6 +520,8 @@ table.insert(G.CHALLENGES,#G.CHALLENGES+1,
                 {id = 'dungeon'},
                 {id = 'ante_hand_discard_reset'},
                 {id = 'no_extra_hand_money'},
+                {id = 'dungeon_1_ante_4'},
+                {id = 'dungeon_1_ante_8'},
             },
             modifiers = {
                 {id = 'hands', value = 8},

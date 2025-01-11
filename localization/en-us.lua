@@ -47,6 +47,30 @@ return {
                     "are drawn {C:attention}face down{}"
                 }
             },
+            ring_1 = {
+                name = "Ring I",
+                text = {
+                    "Forces {C:attention}#1#{} card",
+                    "to be {C:attention}selected{}"
+                }
+            },
+            ring_2 = {
+                name = "Ring II",
+                text = {
+                    "Forces {C:attention}#1#{} card",
+                    "to be {C:attention}selected{}"
+                }
+            },
+        },
+        Blind = {
+            bl_dng_scarlet_spider = {
+                name = 'Scarlet Spider',
+                text = { '+4 Hands', 'Uses forced selection'}
+            },
+            bl_dng_string = {
+                name = 'The String',
+                text = { '2 cards forced to be', 'selected each hand'}
+            },
         }
     },
     misc = {
@@ -61,6 +85,8 @@ return {
         v_text = {
             ch_c_ante_hand_discard_reset = {"{C:blue}Hands{} and {C:red}Discards{} are only reset each {C:attention}Ante{}."},
             ch_c_dungeon = {"{C:attention}Dungeon Mode{}"},
+            ch_c_dungeon_1_ante_8 = {"Ante {C:attention}8{}'s Boss Blind is {C:attention}Scarlet Spider{}"},
+            ch_c_dungeon_1_ante_4 = {"Ante {C:attention}4{}'s Boss Blind is {C:attention}The String{}"},
         },
         v_dictionary = {
         },
