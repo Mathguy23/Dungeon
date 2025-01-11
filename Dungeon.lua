@@ -124,6 +124,9 @@ function add_dungeon_attack()
             end
         end
     end
+    if #pool == 0 then
+        return
+    end
     local picked = total * pseudorandom('dungeon')
     local key = nil
     while (picked > 0) and pool[1] do
