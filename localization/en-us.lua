@@ -87,6 +87,7 @@ return {
             b_rare_loot = "Rare",
             b_hit = "Hit",
             b_stand = "Stand",
+            ph_blackjack_lost = "You Lost",
         },
         v_text = {
             ch_c_ante_hand_discard_reset = {"{C:blue}Hands{} and {C:red}Discards{} are only reset each {C:attention}Ante{}."},

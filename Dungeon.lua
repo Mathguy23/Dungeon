@@ -103,62 +103,6 @@ SMODS.Blind	{
     discovered = true,
 }
 
-SMODS.Blind	{
-    key = 'dealer',
-    config = {},
-    boss = {min = 1, max = 10},
-    boss_colour = HEX("7ca4a1"),
-    atlas = "blinds3",
-    pos = { x = 0, y = 0},
-    name = 'The Dealer',
-    vars = {},
-    dollars = 0,
-    mult = 2,
-    in_pool = function(self)
-        return false
-    end,
-    set_blind = function(self)
-        G.GAME.dng_busted = nil
-        G.GAME.hit_limit = 2
-    end,
-    drawn_to_hand = function(self)
-        local total = 0
-        for i = 1, #G.hand.cards do
-            local id = G.hand.cards[i]:get_id()
-            if id > 0 then
-                local rank = SMODS.Ranks[G.hand.cards[i].base.value] or {}
-                local nominal = rank.nominal
-                if rank.key == 'Ace' then
-                    total = total + 1
-                else
-                    total = total + nominal
-                end
-            end
-        end
-        if total > 21 then
-            G.E_MANAGER:add_event(Event({
-                trigger = 'immediate',
-                func = function()
-                    play_area_status_text("Bust (" .. tostring(total) .. ")")
-                    return true
-                end
-            }))
-            for i = 1, #G.hand.cards do
-                G.hand.cards[i]:start_dissolve()
-            end
-            G.GAME.dng_busted = true
-            G.GAME.blind.chips = 0
-            G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
-            G.STATE = G.STATES.NEW_ROUND
-        elseif ((#G.deck.cards == 0) and (#G.hand.cards == 0)) or (G.GAME.dng_busted == true) then
-            G.GAME.blind.chips = 0
-            G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
-            G.STATE = G.STATES.NEW_ROUND
-        end
-    end,
-    discovered = true,
-}
-
 function dunegon_selection(theBlind)
     stop_use()
     if G.blind_select then 
@@ -270,34 +214,6 @@ function dungeon_new_round(theBlind)
             end
         }))
 end
-
-SMODS.Tag {
-    key = 'blackjack',
-    atlas = 'tags',
-    loc_txt = {
-        name = "Blackjack Tag",
-        text = {
-            "Play The",
-            "Dealer"
-        }
-    },
-    discovered = true,
-    in_pool = function(self)
-        return G.GAME.modifiers.dungeon
-    end,
-    pos = {x = 0, y = 0},
-    apply = function(self, tag, context)
-        if context.type == 'new_blind_choice' then
-            tag:yep('+', G.C.RED,function() 
-                dunegon_selection('bl_dng_dealer')
-                return true
-            end)
-            tag.triggered = true
-            return true
-        end
-    end,
-    config = {type = 'new_blind_choice'}
-}
 
 local old_HUD = create_UIBox_HUD_blind
 function create_UIBox_HUD_blind()
@@ -770,6 +686,92 @@ function G.UIDEF.loot_shop()
     return t
 end
 
+-----Blackjack Minigame----------
+
+SMODS.Blind	{
+    key = 'dealer',
+    config = {},
+    boss = {min = 1, max = 10},
+    boss_colour = HEX("7ca4a1"),
+    atlas = "blinds3",
+    pos = { x = 0, y = 0},
+    name = 'The Dealer',
+    vars = {},
+    dollars = 0,
+    mult = 2,
+    in_pool = function(self)
+        return false
+    end,
+    set_blind = function(self)
+        G.GAME.dng_busted = nil
+        G.GAME.hit_limit = 2
+        SMODS.saved = true
+    end,
+    drawn_to_hand = function(self)
+        local total = 0
+        for i = 1, #G.hand.cards do
+            local id = G.hand.cards[i]:get_id()
+            if id > 0 then
+                local rank = SMODS.Ranks[G.hand.cards[i].base.value] or {}
+                local nominal = rank.nominal
+                if rank.key == 'Ace' then
+                    total = total + 1
+                else
+                    total = total + nominal
+                end
+            end
+        end
+        if total > 21 then
+            G.E_MANAGER:add_event(Event({
+                trigger = 'immediate',
+                func = function()
+                    play_area_status_text("Bust (" .. tostring(total) .. ")")
+                    return true
+                end
+            }))
+            for i = 1, #G.hand.cards do
+                G.hand.cards[i]:start_dissolve()
+            end
+            G.GAME.dng_busted = true
+            -- G.GAME.blind.chips = 0
+            -- G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+            G.STATE = G.STATES.NEW_ROUND
+        elseif ((#G.deck.cards == 0) and (#G.hand.cards == 0)) or (G.GAME.dng_busted == true) then
+            -- G.GAME.blind.chips = 0
+            -- G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+            G.STATE = G.STATES.NEW_ROUND
+        end
+    end,
+    discovered = true,
+}
+
+SMODS.Tag {
+    key = 'blackjack',
+    atlas = 'tags',
+    loc_txt = {
+        name = "Blackjack Tag",
+        text = {
+            "Play The",
+            "Dealer"
+        }
+    },
+    discovered = true,
+    in_pool = function(self)
+        return G.GAME.modifiers.dungeon
+    end,
+    pos = {x = 0, y = 0},
+    apply = function(self, tag, context)
+        if context.type == 'new_blind_choice' then
+            tag:yep('+', G.C.GREEN,function()
+                return true
+            end)
+            tag.triggered = true
+            return true
+        end
+    end,
+    config = {type = 'new_blind_choice'}
+}
+
 local old_buttons = create_UIBox_buttons
 function create_UIBox_buttons()
     local t = old_buttons()
@@ -922,8 +924,8 @@ G.FUNCS.stand = function(e)
                 if #G.deck.cards - bl_cards <= 0 then
                     G.GAME.dng_busted = true
                     G.GAME.hit_limit = 0
-                    G.GAME.blind.chips = 0
-                    G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+                    -- G.GAME.blind.chips = 0
+                    -- G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
                     G.E_MANAGER:add_event(Event({
                         trigger = 'immediate',
                         func = function()
@@ -951,8 +953,8 @@ G.FUNCS.stand = function(e)
                 if #G.deck.cards - bl_cards <= 0 then
                     G.GAME.dng_busted = true
                     G.GAME.hit_limit = 0
-                    G.GAME.blind.chips = 0
-                    G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+                    -- G.GAME.blind.chips = 0
+                    -- G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
                     G.E_MANAGER:add_event(Event({
                         trigger = 'immediate',
                         func = function()
@@ -981,8 +983,8 @@ G.FUNCS.stand = function(e)
                 if #G.deck.cards - bl_cards <= 0 then
                     G.GAME.dng_busted = true
                     G.GAME.hit_limit = 0
-                    G.GAME.blind.chips = 0
-                    G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+                    -- G.GAME.blind.chips = 0
+                    -- G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
                     G.E_MANAGER:add_event(Event({
                         trigger = 'immediate',
                         func = function()
@@ -1011,6 +1013,16 @@ G.FUNCS.draw_from_deck_to_hand = function(e)
         old_draw_from_deck()
     end
 end
+
+local old_context = SMODS.calculate_context
+SMODS.calculate_context = function(context, return_table)
+    old_context(context, return_table)
+    if context.end_of_round and (G and G.GAME and G.GAME.blind and G.GAME.blind.config and G.GAME.blind.config.blind and G.GAME.blind.config.blind.name == "The Dealer") then
+        SMODS.saved = true
+    end
+end
+
+-----------------------------------
 
 table.insert(G.CHALLENGES,#G.CHALLENGES+1,
     {name = 'Dungeon',

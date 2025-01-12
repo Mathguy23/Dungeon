@@ -366,3 +366,48 @@ payload = '''elseif self.name == "The Dealer" then
     return 'Dungeon'
 '''
 match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+pattern = '''G.GAME.skips = (G.GAME.skips or 0) + 1'''
+position = 'after'
+payload = '''if _tag and _tag.config.ref_table then
+    local valid = false
+    if _tag.config.ref_table.key == 'tag_dng_blackjack' then
+        valid = true
+    end
+    if valid then
+        local skipped, skip_to = G.GAME.blind_on_deck or 'Small', 
+        G.GAME.blind_on_deck == 'Small' and 'Big' or G.GAME.blind_on_deck == 'Big' and 'Boss' or 'Boss'
+        G.GAME.round_resets.blind_states[skipped] = 'Skipped'
+        G.GAME.round_resets.blind_states[skip_to] = 'Select'
+        G.GAME.blind_on_deck = skip_to
+        play_sound('generic1')
+        G.E_MANAGER:add_event(Event({
+            trigger = 'immediate',
+            func = function()
+            delay(0.3)
+            SMODS.calculate_context({skip_blind = true})
+            if _tag.config.ref_table.key == 'tag_dng_blackjack' then
+                dunegon_selection('bl_dng_dealer')
+            end
+            return true
+            end
+        }))
+        return
+    end
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''config.saved and'''
+position = 'after'
+payload = '''(G and G.GAME and G.GAME.blind and G.GAME.blind.config and G.GAME.blind.config.blind and G.GAME.blind.config.blind.name == "The Dealer") and {n=G.UIT.C, config={padding = 0.05, align = 'cm'}, nodes={
+    {n=G.UIT.R, config={align = 'cm'}, nodes={
+        {n=G.UIT.O, config={object = DynaText({string = {' '..localize('ph_blackjack_lost')..' '}, colours = {G.C.RED}, shadow = true, pop_in = 0, scale = 0.5*scale, silent = true})}}
+    }}
+}} or config.saved and'''
+match_indent = true
