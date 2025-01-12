@@ -899,7 +899,11 @@ G.FUNCS.stand = function(e)
             end
             delay(0.5)
             if bl_total < total then
-                play_area_status_text("Win (" .. tostring(total) .. " > " .. tostring(bl_total) .. ")")
+                if bl_total == -1 then
+                    play_area_status_text("Win (" .. tostring(total) .. " > Bust)")
+                else
+                    play_area_status_text("Win (" .. tostring(total) .. " > " .. tostring(bl_total) .. ")")
+                end
                 local card = pseudorandom_element(G.hand.cards, pseudoseed('bj'))
                 card:set_seal(SMODS.poll_seal({guaranteed = true, type_key = 'certsl'}))
                 G.GAME.hit_limit = 2
