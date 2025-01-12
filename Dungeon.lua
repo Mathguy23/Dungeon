@@ -296,6 +296,38 @@ function add_dungeon_attack()
     add_attack(key, index)
 end
 
+function get_specific_pack(seed, cat)
+    local cume, it, center = 0, 0, nil
+    local pool = {}
+    for k, v in ipairs(G.P_CENTER_POOLS['Booster']) do
+        local c_cat
+        if v.config.choose > 1 then
+            c_cat = 3
+        elseif v.config.extra > 3 then
+            c_cat = 2
+        else
+            c_cat = 1
+        end
+        if c_cat == cat then
+            table.insert(pool, v) 
+        end
+    end
+    if #pool == 0 then
+        return G.P_CENTERS["p_buffoon_normal_1"]
+    end
+    for k, v in ipairs(pool) do
+        if not G.GAME.banned_keys[v.key] then cume = cume + (v.weight or 1 ) end
+    end
+    local poll = pseudorandom(pseudoseed((seed or 'pack_generic')..G.GAME.round_resets.ante))*cume
+    for k, v in ipairs(pool) do
+        if not G.GAME.banned_keys[v.key] then 
+            if true then it = it + (v.weight or 1) end
+            if it >= poll and it - (v.weight or 1) <= poll then center = v; break end
+        end
+    end
+    return center
+end
+
 G.FUNCS.can_common = function(e)
     if ((G.GAME.dollars-G.GAME.bankrupt_at) - 3 < 0) then 
         e.config.colour = G.C.UI.BACKGROUND_INACTIVE
@@ -312,14 +344,21 @@ G.FUNCS.make_common_loot = function(e)
     local t_total = G.GAME.tarot_rate
     local p_total = G.GAME.planet_rate
     local c_total = G.GAME.playing_card_rate or 0
-    local total = j_total + t_total + p_total + c_total
+    local b_total = 11
+    local total = j_total + t_total + p_total + c_total + b_total
     local rng = total * pseudorandom('common')
     local card
     if rng < j_total then
         card = SMODS.create_card {set = "Joker", no_edition = true, rarity = 0, area = G.shop_jokers}
     elseif rng < j_total + t_total then
         card = SMODS.create_card {set = "Tarot", no_edition = true, area = G.shop_jokers}
-    elseif (rng < j_total + t_total + p_total) or (c_total == 0) then
+    elseif rng < j_total + t_total + b_total then
+        card = Card(G.shop_jokers.T.x + G.shop_jokers.T.w/2,
+        G.shop_jokers.T.y, G.CARD_W*1.27, G.CARD_H*1.27, G.P_CARDS.empty, get_specific_pack('dungeon', 1), {bypass_discovery_center = true, bypass_discovery_ui = true})
+        create_shop_card_ui(card, 'Booster', G.shop_jokers)
+        card.ability.booster_pos = #G.shop_jokers.cards + 1
+        card:start_materialize()
+    elseif (rng < j_total + t_total + b_total + p_total) or (c_total == 0) then
         card = SMODS.create_card {set = "Planet", no_edition = true, area = G.shop_jokers}
     else
         card = SMODS.create_card {set = "Base", area = G.shop_jokers}
@@ -336,6 +375,7 @@ G.FUNCS.make_common_loot = function(e)
     card.ability.couponed = true
     card:set_cost()
     create_shop_card_ui(card, card.ability.set, G.shop_jokers)
+    G.E_MANAGER:add_event(Event({ func = function() save_run(); return true end}))
 end
 
 G.FUNCS.can_uncommon = function(e)
@@ -356,7 +396,7 @@ G.FUNCS.make_uncommon_loot = function(e)
         card = SMODS.create_card {set = "Joker", rarity = 0.9, area = G.shop_jokers}
     elseif rng < 0.85 then
         card = Card(G.shop_jokers.T.x + G.shop_jokers.T.w/2,
-        G.shop_jokers.T.y, G.CARD_W*1.27, G.CARD_H*1.27, G.P_CARDS.empty, get_pack('dungeon'), {bypass_discovery_center = true, bypass_discovery_ui = true})
+        G.shop_jokers.T.y, G.CARD_W*1.27, G.CARD_H*1.27, G.P_CARDS.empty, get_specific_pack('dungeon', 2), {bypass_discovery_center = true, bypass_discovery_ui = true})
         create_shop_card_ui(card, 'Booster', G.shop_jokers)
         card.ability.booster_pos = #G.shop_jokers.cards + 1
         card:start_materialize()
@@ -375,6 +415,7 @@ G.FUNCS.make_uncommon_loot = function(e)
     card.ability.couponed = true
     card:set_cost()
     create_shop_card_ui(card, card.ability.set, G.shop_jokers)
+    G.E_MANAGER:add_event(Event({ func = function() save_run(); return true end}))
 end
 
 G.FUNCS.can_rare = function(e)
@@ -391,8 +432,14 @@ G.FUNCS.make_rare_loot = function(e)
     ease_dollars(-10)
     local rng = pseudorandom('common')
     local card
-    if rng < 0.6 then
+    if rng < 0.5 then
         card = SMODS.create_card {set = "Joker", rarity = 0.99, area = G.shop_jokers}
+    elseif rng < 0.7 then
+        card = Card(G.shop_jokers.T.x + G.shop_jokers.T.w/2,
+        G.shop_jokers.T.y, G.CARD_W*1.27, G.CARD_H*1.27, G.P_CARDS.empty, get_specific_pack('dungeon', 3), {bypass_discovery_center = true, bypass_discovery_ui = true})
+        create_shop_card_ui(card, 'Booster', G.shop_jokers)
+        card.ability.booster_pos = #G.shop_jokers.cards + 1
+        card:start_materialize()
     else
         card = Card(G.shop_jokers.T.x + G.shop_jokers.T.w/2,
         G.shop_jokers.T.y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, G.P_CENTERS[get_next_voucher_key()], {bypass_discovery_center = true, bypass_discovery_ui = true})
@@ -410,6 +457,7 @@ G.FUNCS.make_rare_loot = function(e)
     card.ability.couponed = true
     card:set_cost()
     create_shop_card_ui(card, card.ability.set, G.shop_jokers)
+    G.E_MANAGER:add_event(Event({ func = function() save_run(); return true end}))
 end
 
 function G.UIDEF.loot_shop()
