@@ -16,9 +16,13 @@ end
 
 SMODS.Atlas({ key = "attacks", atlas_table = "ASSET_ATLAS", path = "attacks.png", px = 34, py = 34})
 
+SMODS.Atlas({ key = "tags", atlas_table = "ASSET_ATLAS", path = "tags.png", px = 34, py = 34})
+
 SMODS.Atlas({ key = "blinds", atlas_table = "ANIMATION_ATLAS", path = "blinds.png", px = 34, py = 34, frames = 21 })
 
 SMODS.Atlas({ key = "blinds2", atlas_table = "ANIMATION_ATLAS", path = "blinds2.png", px = 34, py = 34, frames = 21 })
+
+SMODS.Atlas({ key = "blinds3", atlas_table = "ANIMATION_ATLAS", path = "blinds3.png", px = 34, py = 34, frames = 21 })
 
 SMODS.Blind	{
     key = 'scarlet_spider',
@@ -97,6 +101,194 @@ SMODS.Blind	{
         end
     end,
     discovered = true,
+}
+
+SMODS.Blind	{
+    key = 'dealer',
+    config = {},
+    boss = {min = 1, max = 10},
+    boss_colour = HEX("7ca4a1"),
+    atlas = "blinds3",
+    pos = { x = 0, y = 0},
+    name = 'The Dealer',
+    vars = {},
+    dollars = 0,
+    mult = 2,
+    in_pool = function(self)
+        return false
+    end,
+    set_blind = function(self)
+        G.GAME.hit_limit = 2
+    end,
+    drawn_to_hand = function(self)
+        local total = 0
+        for i = 1, #G.hand.cards do
+            local id = G.hand.cards[i]:get_id()
+            if id > 0 then
+                local rank = SMODS.Ranks[G.hand.cards[i].base.value] or {}
+                local nominal = rank.nominal
+                if rank.key == 'Ace' then
+                    total = total + 1
+                else
+                    total = total + nominal
+                end
+            end
+        end
+        if total > 21 then
+            for i = 1, #G.hand.cards do
+                G.hand.cards[i]:start_dissolve()
+            end
+            G.GAME.dng_busted = true
+            G.GAME.blind.chips = 0
+            G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+            G.STATE = G.STATES.NEW_ROUND
+        elseif ((#G.deck.cards == 0) and (#G.hand.cards == 0)) or (G.GAME.dng_busted == true) then
+            G.GAME.blind.chips = 0
+            G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+            G.STATE = G.STATES.NEW_ROUND
+        end
+    end,
+    discovered = true,
+}
+
+function dunegon_selection(theBlind)
+    stop_use()
+    if G.blind_select then 
+        G.GAME.facing_blind = true
+        G.blind_prompt_box:get_UIE_by_ID('prompt_dynatext1').config.object.pop_delay = 0
+        G.blind_prompt_box:get_UIE_by_ID('prompt_dynatext1').config.object:pop_out(5)
+        G.blind_prompt_box:get_UIE_by_ID('prompt_dynatext2').config.object.pop_delay = 0
+        G.blind_prompt_box:get_UIE_by_ID('prompt_dynatext2').config.object:pop_out(5) 
+
+        G.E_MANAGER:add_event(Event({
+        trigger = 'before', delay = 0.2,
+        func = function()
+            G.blind_prompt_box.alignment.offset.y = -10
+            G.blind_select.alignment.offset.y = 40
+            G.blind_select.alignment.offset.x = 0
+            return true
+        end}))
+        G.E_MANAGER:add_event(Event({
+        trigger = 'immediate',
+        func = function()
+            ease_round(1)
+            inc_career_stat('c_rounds', 1)
+            if _DEMO then
+            G.SETTINGS.DEMO_ROUNDS = (G.SETTINGS.DEMO_ROUNDS or 0) + 1
+            inc_steam_stat('demo_rounds')
+            G:save_settings()
+            end
+            -- G.GAME.round_resets.blind = e.config.ref_table
+            -- G.GAME.round_resets.blind_states[G.GAME.blind_on_deck] = 'Current'
+            G.blind_select:remove()
+            G.blind_prompt_box:remove()
+            G.blind_select = nil
+            delay(0.2)
+            return true
+        end}))
+        G.E_MANAGER:add_event(Event({
+        trigger = 'immediate',
+        func = function()
+            dungeon_new_round(theBlind)
+            return true
+        end
+        }))
+    end
+end
+
+function dungeon_new_round(theBlind)
+    G.RESET_JIGGLES = nil
+    delay(0.4)
+    G.E_MANAGER:add_event(Event({
+      trigger = 'immediate',
+      func = function()
+            G.GAME.current_round.discards_left = math.max(0, G.GAME.round_resets.discards + G.GAME.round_bonus.discards)
+            G.GAME.current_round.hands_left = (math.max(1, G.GAME.round_resets.hands + G.GAME.round_bonus.next_hands))
+            G.GAME.current_round.hands_played = 0
+            G.GAME.current_round.discards_used = 0
+            G.GAME.current_round.reroll_cost_increase = 0
+            G.GAME.current_round.used_packs = {}
+
+            for k, v in pairs(G.GAME.hands) do 
+                v.played_this_round = 0
+            end
+
+            for k, v in pairs(G.playing_cards) do
+                v.ability.wheel_flipped = nil
+            end
+
+            local chaos = find_joker('Chaos the Clown')
+            G.GAME.current_round.free_rerolls = #chaos
+            calculate_reroll_cost(true)
+
+            G.GAME.round_bonus.next_hands = 0
+            G.GAME.round_bonus.discards = 0
+
+            local blhash = 'S'
+            -- if G.GAME.round_resets.blind == G.P_BLINDS.bl_small then
+            --     G.GAME.round_resets.blind_states.Small = 'Current'
+            --     G.GAME.current_boss_streak = 0
+            --     blhash = 'S'
+            -- elseif G.GAME.round_resets.blind == G.P_BLINDS.bl_big then
+            --     G.GAME.round_resets.blind_states.Big = 'Current'
+            --     G.GAME.current_boss_streak = 0
+            --     blhash = 'B'
+            -- else
+            --     G.GAME.round_resets.blind_states.Boss = 'Current'
+            --     blhash = 'L'
+            -- end
+            G.GAME.subhash = (G.GAME.round_resets.ante)..(blhash)
+
+            -- local customBlind = {name = 'The Ox', defeated = false, order = 4, dollars = 5, mult = 2,  vars = {localize('ph_most_played')}, debuff = {}, pos = {x=0, y=2}, boss = {min = 6, max = 10, bonus = true}, boss_colour = HEX('b95b08')}
+            G.GAME.blind_on_deck = 'Dungeon'
+            G.GAME.blind:set_blind(G.P_BLINDS[theBlind])
+            G.GAME.last_blind.boss = nil
+            G.HUD_blind.alignment.offset.y = -10
+            G.HUD_blind:recalculate(false)
+            
+            delay(0.4)
+
+            G.E_MANAGER:add_event(Event({
+                trigger = 'immediate',
+                func = function()
+                    G.STATE = G.STATES.DRAW_TO_HAND
+                    G.deck:shuffle('nr'..G.GAME.round_resets.ante)
+                    G.deck:hard_set_T()
+                    G.STATE_COMPLETE = false
+                    return true
+                end
+            }))
+            return true
+            end
+        }))
+end
+
+SMODS.Tag {
+    key = 'blackjack',
+    atlas = 'tags',
+    loc_txt = {
+        name = "Blackjack Tag",
+        text = {
+            "Play The",
+            "Dealer"
+        }
+    },
+    discovered = true,
+    in_pool = function(self)
+        return G.GAME.modifiers.dungeon
+    end,
+    pos = {x = 0, y = 0},
+    apply = function(self, tag, context)
+        if context.type == 'new_blind_choice' then
+            tag:yep('+', G.C.RED,function() 
+                dunegon_selection('bl_dng_dealer')
+                return true
+            end)
+            tag.triggered = true
+            return true
+        end
+    end,
+    config = {type = 'new_blind_choice'}
 }
 
 local old_HUD = create_UIBox_HUD_blind
@@ -568,6 +760,183 @@ function G.UIDEF.loot_shop()
               }, false)
         }}
     return t
+end
+
+local old_buttons = create_UIBox_buttons
+function create_UIBox_buttons()
+    local t = old_buttons()
+    if G and G.GAME and G.GAME.blind and G.GAME.blind.config and G.GAME.blind.config.blind and G.GAME.blind.config.blind.name == "The Dealer" then
+        local index = 3
+        if G.SETTINGS.play_button_pos ~= 1 then
+            index = 1
+        end
+        local button = t.nodes[index]
+        button.nodes[1].nodes[1].config.text = localize("b_hit")
+        button.config.button = 'hit'
+        button.config.func = 'can_hit'
+        -- button.config.color = G.C[checking[G.GAME.active].colour]
+    end
+    if G and G.GAME and G.GAME.blind and G.GAME.blind.config and G.GAME.blind.config.blind and G.GAME.blind.config.blind.name == "The Dealer" then
+        local index = 1
+        if G.SETTINGS.play_button_pos ~= 1 then
+            index = 3
+        end
+        local button = t.nodes[index]
+        button.nodes[1].nodes[1].config.text = localize("b_stand")
+        button.config.button = 'stand'
+        button.config.func = 'can_stand'
+        -- button.config.color = G.C[checking[G.GAME.passive].colour]
+    end
+    return t
+end
+
+G.FUNCS.can_hit = function(e)
+    if G.GAME.dng_busted then
+        e.config.colour = G.C.UI.BACKGROUND_INACTIVE
+        e.config.button = nil
+    else
+        e.config.colour = G.C.RED
+        e.config.button = 'hit'
+    end
+end
+
+G.FUNCS.hit = function(e)
+    G.GAME.hit_limit = (G.GAME.hit_limit or 2) + 1
+    G.E_MANAGER:add_event(Event({
+        trigger = 'immediate',
+        func = function()
+            G.STATE = G.STATES.DRAW_TO_HAND
+            G.STATE_COMPLETE = false
+            return true
+        end
+    }))
+end
+
+G.FUNCS.can_stand = function(e)
+    if false then
+        e.config.colour = G.C.UI.BACKGROUND_INACTIVE
+        e.config.button = nil
+    else
+        e.config.colour = G.C.GREEN
+        e.config.button = 'stand'
+    end
+end
+
+G.FUNCS.stand = function(e)
+    local total = 0
+    local aces = 0
+    for i = 1, #G.hand.cards do
+        local id = G.hand.cards[i]:get_id()
+        if id > 0 then
+            local rank = SMODS.Ranks[G.hand.cards[i].base.value] or {}
+            local nominal = rank.nominal
+            if rank.key == 'Ace' then
+                total = total + 1
+                aces = aces + 1
+            else
+                total = total + nominal
+            end
+        end
+        if total <= 11 and aces == 1 then
+            total = total + 10
+        elseif total <= 1 and aces == 2 then
+            total = total + 20
+        end
+        if total > 21 then
+            total = -1
+        end
+    end
+    local bl_total = 0
+    local bl_aces = 0
+    local bl_cards = 0
+    while bl_total <= 21 do
+        local index = #G.deck.cards - bl_cards
+        if index <= 0 then
+            break
+        else
+            local id = G.deck.cards[index]:get_id()
+            if id > 0 then
+                local rank = SMODS.Ranks[G.deck.cards[index].base.value] or {}
+                local nominal = rank.nominal
+                if rank.key == 'Ace' then
+                    bl_total = bl_total + 11
+                    bl_aces = bl_aces + 1
+                else
+                    bl_total = bl_total + nominal
+                end
+            end
+            if bl_total > 21 then
+                while (bl_total > 21) and (bl_aces > 0) do
+                    bl_total = bl_total - 10
+                    bl_aces = bl_aces - 1
+                end
+            end
+            if (bl_total >= 17) and (bl_total <= 21) then
+                bl_cards = bl_cards + 1
+                break
+            end
+        end
+        bl_cards = bl_cards + 1
+    end 
+    if bl_total > 21 then
+        bl_total = -1
+    end
+    G.E_MANAGER:add_event(Event({
+        trigger = 'immediate',
+        func = function()
+            for i = 1, bl_cards do
+                draw_card(G.deck, G.play, i*100/5, 'up')
+            end
+            delay(0.5)
+            if bl_total < total then
+                play_area_status_text("Win")
+                local card = pseudorandom_element(G.hand.cards, pseudoseed('bj'))
+                card:set_seal(SMODS.poll_seal({guaranteed = true, type_key = 'certsl'}))
+                if #G.deck.cards - bl_cards == 0 then
+                    G.GAME.dng_busted = true
+                    G.GAME.hit_limit = 0
+                end
+            elseif bl_total == total then
+                play_area_status_text("Push")
+                G.GAME.hit_limit = 2
+                if #G.deck.cards - bl_cards == 0 then
+                    G.GAME.dng_busted = true
+                    G.GAME.hit_limit = 0
+                end
+            elseif bl_total > total then
+                play_area_status_text("Loss")
+                G.GAME.dng_busted = true
+                G.GAME.hit_limit = 0
+            end
+            G.E_MANAGER:add_event(Event({
+                trigger = 'immediate',
+                func = function()
+                    for i = 1, #G.play.cards do
+                        draw_card(G.play, G.discard, i*100/5, 'up')
+                    end
+                    for i = 1, #G.hand.cards do
+                        draw_card(G.hand, G.discard, i*100/5, 'up')
+                    end
+                    return true
+                end
+            }))
+            return true
+        end
+    }))
+end
+
+local old_draw_from_deck = G.FUNCS.draw_from_deck_to_hand
+G.FUNCS.draw_from_deck_to_hand = function(e)
+    if G and G.GAME and G.GAME.blind and G.GAME.blind.config and G.GAME.blind.config.blind and G.GAME.blind.config.blind.name == "The Dealer" then
+        local hand_space =  math.max(0, (G.GAME.hit_limit or 2) - #G.hand.cards)
+        if hand_space >= 1 then
+            for i = 1, hand_space do
+                draw_card(G.deck,G.hand, i*100/hand_space,'up', true)
+            end
+        end
+    else
+        old_draw_from_deck()
+    end
 end
 
 table.insert(G.CHALLENGES,#G.CHALLENGES+1,

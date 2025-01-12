@@ -148,7 +148,8 @@ match_indent = true
 target = 'game.lua'
 pattern = '''G.GAME.blind:drawn_to_hand()'''
 position = 'before'
-payload = '''if G.GAME.modifiers.dungeon then
+payload = '''
+if G.GAME.modifiers.dungeon then
     for i, j in ipairs(G.GAME.blind_attacks) do
         calculate_blind_effect(j, {drawn_to_hand = true, index = i})
     end

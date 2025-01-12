@@ -71,6 +71,10 @@ return {
                 name = 'The String',
                 text = { '2 cards forced to be', 'selected each hand'}
             },
+            bl_dng_dealer = {
+                name = 'The Dealer',
+                text = { 'Blackjack' }
+            },
         }
     },
     misc = {
@@ -81,6 +85,8 @@ return {
             b_common_loot = "Common",
             b_uncommon_loot = "Uncommon",
             b_rare_loot = "Rare",
+            b_hit = "Hit",
+            b_stand = "Stand",
         },
         v_text = {
             ch_c_ante_hand_discard_reset = {"{C:blue}Hands{} and {C:red}Discards{} are only reset each {C:attention}Ante{}."},
