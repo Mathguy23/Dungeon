@@ -269,6 +269,7 @@ function add_dungeon_attack()
     local total = 0
     for i, j in pairs(G.BL_EFFECT_PATTERNS[G.GAME.blind.config.blind.key] or G.BL_EFFECT_PATTERNS['bl_boss']) do
         if i ~= G.GAME.blind_attacks[index] then
+            local valid = true
             if i == 'ring_1' and (forced_selection_count > 2) then
                 valid = false
             elseif i == 'ring_2' and (forced_selection_count > 1) then
