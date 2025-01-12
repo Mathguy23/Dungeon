@@ -893,14 +893,15 @@ G.FUNCS.stand = function(e)
                 play_area_status_text("Win")
                 local card = pseudorandom_element(G.hand.cards, pseudoseed('bj'))
                 card:set_seal(SMODS.poll_seal({guaranteed = true, type_key = 'certsl'}))
-                if #G.deck.cards - bl_cards == 0 then
+                G.GAME.hit_limit = 2
+                if #G.deck.cards - bl_cards <= 0 then
                     G.GAME.dng_busted = true
                     G.GAME.hit_limit = 0
                 end
             elseif bl_total == total then
                 play_area_status_text("Push")
                 G.GAME.hit_limit = 2
-                if #G.deck.cards - bl_cards == 0 then
+                if #G.deck.cards - bl_cards <= 0 then
                     G.GAME.dng_busted = true
                     G.GAME.hit_limit = 0
                 end
