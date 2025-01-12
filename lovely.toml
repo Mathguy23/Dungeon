@@ -347,3 +347,22 @@ payload = '''if v.ability.forced_selection and self.highlighted[1] and not v.hig
     self:add_to_highlighted(v)
 end'''
 match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+pattern = '''G.GAME.round_resets.blind_states.Small = 'Defeated''''
+position = 'after'
+payload = '''                        elseif G.GAME.blind_on_deck == 'Dungeon' then
+                            '''
+match_indent = false
+
+[[patches]]
+[patches.pattern]
+target = 'blind.lua'
+pattern = '''elseif self.name == "Big Blind" then'''
+position = 'before'
+payload = '''elseif self.name == "The Dealer" then
+    return 'Dungeon'
+'''
+match_indent = true

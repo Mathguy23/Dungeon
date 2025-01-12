@@ -118,6 +118,7 @@ SMODS.Blind	{
         return false
     end,
     set_blind = function(self)
+        G.GAME.dng_busted = nil
         G.GAME.hit_limit = 2
     end,
     drawn_to_hand = function(self)
