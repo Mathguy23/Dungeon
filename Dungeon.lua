@@ -136,6 +136,13 @@ SMODS.Blind	{
             end
         end
         if total > 21 then
+            G.E_MANAGER:add_event(Event({
+                trigger = 'immediate',
+                func = function()
+                    play_area_status_text("Bust (" .. tostring(total) .. ")")
+                    return true
+                end
+            }))
             for i = 1, #G.hand.cards do
                 G.hand.cards[i]:start_dissolve()
             end
@@ -838,14 +845,14 @@ G.FUNCS.stand = function(e)
                 total = total + nominal
             end
         end
-        if total <= 11 and aces == 1 then
-            total = total + 10
-        elseif total <= 1 and aces == 2 then
-            total = total + 20
-        end
-        if total > 21 then
-            total = -1
-        end
+    end
+    if total <= 11 and aces == 1 then
+        total = total + 10
+    elseif total <= 1 and aces == 2 then
+        total = total + 20
+    end
+    if total > 21 then
+        total = -1
     end
     local bl_total = 0
     local bl_aces = 0
@@ -892,27 +899,27 @@ G.FUNCS.stand = function(e)
             end
             delay(0.5)
             if bl_total < total then
-                play_area_status_text("Win")
+                play_area_status_text("Win (" .. tostring(total) .. " > " .. tostring(bl_total) .. ")")
                 local card = pseudorandom_element(G.hand.cards, pseudoseed('bj'))
                 card:set_seal(SMODS.poll_seal({guaranteed = true, type_key = 'certsl'}))
                 G.GAME.hit_limit = 2
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'immediate',
+                    func = function()
+                        for i = 1, #G.play.cards do
+                            draw_card(G.play, G.discard, i*100/5, 'up')
+                        end
+                        for i = 1, #G.hand.cards do
+                            draw_card(G.hand, G.discard, i*100/5, 'up')
+                        end
+                        return true
+                    end
+                }))
                 if #G.deck.cards - bl_cards <= 0 then
                     G.GAME.dng_busted = true
                     G.GAME.hit_limit = 0
                     G.GAME.blind.chips = 0
                     G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
-                    G.E_MANAGER:add_event(Event({
-                        trigger = 'immediate',
-                        func = function()
-                            for i = 1, #G.play.cards do
-                                draw_card(G.play, G.discard, i*100/5, 'up')
-                            end
-                            for i = 1, #G.hand.cards do
-                                draw_card(G.hand, G.discard, i*100/5, 'up')
-                            end
-                            return true
-                        end
-                    }))
                     G.E_MANAGER:add_event(Event({
                         trigger = 'immediate',
                         func = function()
@@ -923,25 +930,25 @@ G.FUNCS.stand = function(e)
                     }))
                 end
             elseif bl_total == total then
-                play_area_status_text("Push")
+                play_area_status_text("Push (" .. tostring(total) .. " = " .. tostring(bl_total) .. ")")
                 G.GAME.hit_limit = 2
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'immediate',
+                    func = function()
+                        for i = 1, #G.play.cards do
+                            draw_card(G.play, G.discard, i*100/5, 'up')
+                        end
+                        for i = 1, #G.hand.cards do
+                            draw_card(G.hand, G.discard, i*100/5, 'up')
+                        end
+                        return true
+                    end
+                }))
                 if #G.deck.cards - bl_cards <= 0 then
                     G.GAME.dng_busted = true
                     G.GAME.hit_limit = 0
                     G.GAME.blind.chips = 0
                     G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
-                    G.E_MANAGER:add_event(Event({
-                        trigger = 'immediate',
-                        func = function()
-                            for i = 1, #G.play.cards do
-                                draw_card(G.play, G.discard, i*100/5, 'up')
-                            end
-                            for i = 1, #G.hand.cards do
-                                draw_card(G.hand, G.discard, i*100/5, 'up')
-                            end
-                            return true
-                        end
-                    }))
                     G.E_MANAGER:add_event(Event({
                         trigger = 'immediate',
                         func = function()
@@ -952,7 +959,7 @@ G.FUNCS.stand = function(e)
                     }))
                 end
             elseif bl_total > total then
-                play_area_status_text("Loss")
+                play_area_status_text("Loss (" .. tostring(total) .. " < " .. tostring(bl_total) .. ")")
                 G.GAME.dng_busted = true
                 G.GAME.hit_limit = 0
                 G.E_MANAGER:add_event(Event({
@@ -967,6 +974,20 @@ G.FUNCS.stand = function(e)
                         return true
                     end
                 }))
+                if #G.deck.cards - bl_cards <= 0 then
+                    G.GAME.dng_busted = true
+                    G.GAME.hit_limit = 0
+                    G.GAME.blind.chips = 0
+                    G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'immediate',
+                        func = function()
+                            G.STATE = G.STATES.DRAW_TO_HAND
+                            G.STATE_COMPLETE = false
+                            return true
+                        end
+                    }))
+                end
             end
             return true
         end
