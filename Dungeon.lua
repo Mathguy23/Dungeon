@@ -241,7 +241,21 @@ function add_dungeon_attack()
     end
     if index == -1 then
         local pool1 = {}
-        index = math.min(#G.GAME.blind_attacks, 1 + math.floor((#G.GAME.blind_attacks) * pseudorandom('attack')))
+        for i = 1, #G.GAME.blind_attacks do
+            local valid = true
+            if G.GAME.blind_attacks[i] == 'raise_1' and (G.GAME.blind.chips / 1.2 <= G.GAME.chips) then
+                valid = false
+            elseif G.GAME.blind_attacks[i] == 'raise_2' and (G.GAME.blind.chips / 1.5 <= G.GAME.chips) then
+                valid = false 
+            end
+            if valid then
+                table.insert(pool1, i)
+            end
+        end
+        if #pool1 == 0 then
+            return
+        end
+        index = pseudorandom_element(pool1, pseudoseed'attack')
     end
     local forced_selection_count = 0
     for i, j in ipairs(G.GAME.blind_attacks) do
@@ -255,12 +269,7 @@ function add_dungeon_attack()
     local total = 0
     for i, j in pairs(G.BL_EFFECT_PATTERNS[G.GAME.blind.config.blind.key] or G.BL_EFFECT_PATTERNS['bl_boss']) do
         if i ~= G.GAME.blind_attacks[index] then
-            local valid = true
-            if i == 'raise_1' and (G.GAME.blind.chips / 1.2 <= G.GAME.chips) then
-                valid = false
-            elseif i == 'raise_2' and (G.GAME.blind.chips / 1.5 <= G.GAME.chips) then
-                valid = false
-            elseif i == 'ring_1' and (forced_selection_count > 2) then
+            if i == 'ring_1' and (forced_selection_count > 2) then
                 valid = false
             elseif i == 'ring_2' and (forced_selection_count > 1) then
                 valid = false
@@ -524,8 +533,8 @@ table.insert(G.CHALLENGES,#G.CHALLENGES+1,
                 {id = 'dungeon_1_ante_8'},
             },
             modifiers = {
-                {id = 'hands', value = 8},
-                {id = 'discards', value = 6},
+                {id = 'hands', value = 10},
+                {id = 'discards', value = 7},
             }
         },
         jokers = {       
