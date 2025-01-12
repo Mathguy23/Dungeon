@@ -792,7 +792,7 @@ function create_UIBox_buttons()
 end
 
 G.FUNCS.can_hit = function(e)
-    if G.GAME.dng_busted then
+    if G.GAME.dng_busted or (#G.deck.cards == 0) then
         e.config.colour = G.C.UI.BACKGROUND_INACTIVE
         e.config.button = nil
     else
@@ -885,8 +885,10 @@ G.FUNCS.stand = function(e)
     G.E_MANAGER:add_event(Event({
         trigger = 'immediate',
         func = function()
-            for i = 1, bl_cards do
-                draw_card(G.deck, G.play, i*100/5, 'up')
+            if bl_cards > 0 then
+                for i = 1, bl_cards do
+                    draw_card(G.deck, G.play, i*100/5, 'up')
+                end
             end
             delay(0.5)
             if bl_total < total then
@@ -897,6 +899,28 @@ G.FUNCS.stand = function(e)
                 if #G.deck.cards - bl_cards <= 0 then
                     G.GAME.dng_busted = true
                     G.GAME.hit_limit = 0
+                    G.GAME.blind.chips = 0
+                    G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'immediate',
+                        func = function()
+                            for i = 1, #G.play.cards do
+                                draw_card(G.play, G.discard, i*100/5, 'up')
+                            end
+                            for i = 1, #G.hand.cards do
+                                draw_card(G.hand, G.discard, i*100/5, 'up')
+                            end
+                            return true
+                        end
+                    }))
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'immediate',
+                        func = function()
+                            G.STATE = G.STATES.DRAW_TO_HAND
+                            G.STATE_COMPLETE = false
+                            return true
+                        end
+                    }))
                 end
             elseif bl_total == total then
                 play_area_status_text("Push")
@@ -904,24 +928,46 @@ G.FUNCS.stand = function(e)
                 if #G.deck.cards - bl_cards <= 0 then
                     G.GAME.dng_busted = true
                     G.GAME.hit_limit = 0
+                    G.GAME.blind.chips = 0
+                    G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'immediate',
+                        func = function()
+                            for i = 1, #G.play.cards do
+                                draw_card(G.play, G.discard, i*100/5, 'up')
+                            end
+                            for i = 1, #G.hand.cards do
+                                draw_card(G.hand, G.discard, i*100/5, 'up')
+                            end
+                            return true
+                        end
+                    }))
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'immediate',
+                        func = function()
+                            G.STATE = G.STATES.DRAW_TO_HAND
+                            G.STATE_COMPLETE = false
+                            return true
+                        end
+                    }))
                 end
             elseif bl_total > total then
                 play_area_status_text("Loss")
                 G.GAME.dng_busted = true
                 G.GAME.hit_limit = 0
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'immediate',
+                    func = function()
+                        for i = 1, #G.play.cards do
+                            draw_card(G.play, G.discard, i*100/5, 'up')
+                        end
+                        for i = 1, #G.hand.cards do
+                            draw_card(G.hand, G.discard, i*100/5, 'up')
+                        end
+                        return true
+                    end
+                }))
             end
-            G.E_MANAGER:add_event(Event({
-                trigger = 'immediate',
-                func = function()
-                    for i = 1, #G.play.cards do
-                        draw_card(G.play, G.discard, i*100/5, 'up')
-                    end
-                    for i = 1, #G.hand.cards do
-                        draw_card(G.hand, G.discard, i*100/5, 'up')
-                    end
-                    return true
-                end
-            }))
             return true
         end
     }))
