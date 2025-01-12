@@ -582,8 +582,8 @@ table.insert(G.CHALLENGES,#G.CHALLENGES+1,
                 {id = 'dungeon_1_ante_8'},
             },
             modifiers = {
-                {id = 'hands', value = 10},
-                {id = 'discards', value = 7},
+                {id = 'hands', value = 8},
+                {id = 'discards', value = 6},
             }
         },
         jokers = {       
