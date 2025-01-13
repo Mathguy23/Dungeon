@@ -194,6 +194,13 @@ function dungeon_new_round(theBlind)
             -- local customBlind = {name = 'The Ox', defeated = false, order = 4, dollars = 5, mult = 2,  vars = {localize('ph_most_played')}, debuff = {}, pos = {x=0, y=2}, boss = {min = 6, max = 10, bonus = true}, boss_colour = HEX('b95b08')}
             G.GAME.blind_on_deck = 'Dungeon'
             G.GAME.blind:set_blind(G.P_BLINDS[theBlind])
+            if G.GAME.modifiers.dungeon then
+                local amount = 3
+                if (G.GAME.blind_on_deck == "Small") then amount = 1 end
+                if (G.GAME.blind_on_deck == "Big") then amount = 2 end
+                for i = 1, amount do add_attack("blank") end
+                for i = 1, amount do add_dungeon_attack() end
+            end
             G.GAME.last_blind.boss = nil
             G.HUD_blind.alignment.offset.y = -10
             G.HUD_blind:recalculate(false)
@@ -346,6 +353,9 @@ end
 
 function add_dungeon_attack()
     if G.GAME.blind.chips <= G.GAME.chips then
+        return
+    end
+    if (G and G.GAME and G.GAME.blind and G.GAME.blind.config and G.GAME.blind.config.blind and G.GAME.blind.config.blind.name == "The Dealer") then
         return
     end
     local index = -1
@@ -1022,7 +1032,221 @@ SMODS.calculate_context = function(context, return_table)
     end
 end
 
------------------------------------
+-----------Memory Game----------
+
+G.FUNCS.can_play_memory = function(e)
+    if (G.GAME.currently_choosing ~= nil) or (G.GAME.dng_tries_left <= 0) then
+        e.config.colour = G.C.UI.BACKGROUND_INACTIVE
+        e.config.button = nil
+    else
+        e.config.colour = G.C.BLUE
+        e.config.button = 'play_memory'
+    end
+end
+
+G.FUNCS.play_memory = function(e)
+    G.GAME.currently_choosing = true
+    G.GAME.memory_cards = {}
+    G.memory_row_1.highlighted = {}
+    G.memory_row_2.highlighted = {}
+    G.GAME.dng_tries_left = G.GAME.dng_tries_left - 1
+end
+
+SMODS.Tag {
+    key = 'memory',
+    atlas = 'tags',
+    loc_txt = {
+        name = "Memory Tag",
+        text = {
+            "Play a",
+            "Memory Game"
+        }
+    },
+    discovered = true,
+    in_pool = function(self)
+        return G.GAME.modifiers.dungeon
+    end,
+    pos = {x = 1, y = 0},
+    apply = function(self, tag, context)
+        if context.type == 'immediate' then
+            tag:yep('+', G.C.GREEN,function()
+                return true
+            end)
+            tag.triggered = true
+            return true
+        end
+    end,
+    config = {type = 'immediate'}
+}
+
+function G.UIDEF.memory()
+    local rows = {}
+    G.GAME.currently_choosing = nil
+    G.GAME.memory_cards = nil
+    for i = 1, 2 do
+        G["memory_row_" .. tostring(i)] = CardArea(
+        G.hand.T.x+0,
+        G.hand.T.y+G.ROOM.T.y + 9,
+        5*1.02*G.CARD_W,
+        1.05*G.CARD_H, 
+        {card_limit = 5, type = 'shop', highlight_limit = 5})
+        table.insert(rows, {n=G.UIT.R, config={align = "cm", padding = 0.05}, nodes={
+            {n=G.UIT.C, config={align = "cm", padding = 0.2, r=0.2, colour = G.C.L_BLACK, emboss = 0.05, minw = 8.2}, nodes={
+                {n=G.UIT.O, config={object = G["memory_row_" .. tostring(i)]}},
+            }},
+        }})
+    end
+    if not G.load_memory_row_1 then
+        G.GAME.dng_tries_left = nil
+        local pools = {G.P_JOKER_RARITY_POOLS[2], G.P_JOKER_RARITY_POOLS[3], G.P_CENTER_POOLS["Spectral"], G.P_CENTER_POOLS["Spectral"], G.P_CENTER_POOLS["Voucher"]}
+        local keys = {}
+        for i, j in ipairs(pools) do
+            local pool = {}
+            for k, v in ipairs(j) do
+                local valid = true
+                local in_pool, pool_opts
+                if v.in_pool and type(v.in_pool) == 'function' then
+                    in_pool, pool_opts = v:in_pool({})
+                end
+                if (G.GAME.used_jokers[v.key] and (not pool_opts or not pool_opts.allow_duplicates) and not next(find_joker("Showman"))) then
+                    valid = false
+                end
+                if not v.unlocked then
+                    valid = false
+                end
+                if (i == 4) and (keys[3] == v.key) then
+                    valid = false
+                end
+                if G.GAME.banned_keys[v.key] then
+                    valid = false
+                end
+                if G.GAME.used_vouchers[v.key] then
+                    valid = false
+                end
+                if v.requires then 
+                    for i2, j2 in pairs(v.requires) do
+                        if not G.GAME.used_vouchers[j2] then 
+                            valid = false
+                        end
+                    end
+                end
+                for i2, j2 in ipairs(SMODS.Consumable.legendaries) do
+                    if v.key == j2.key then
+                        valid = false
+                        break
+                    end
+                end
+                if (v.key == 'c_black_hole') or (v.key == 'c_soul') then
+                    valid = false
+                end
+                if valid then
+                    table.insert(pool, v.key)
+                end
+            end
+            if #pool == 0 then
+                keys[#keys + 1] = 'c_pluto'
+            else
+                keys[#keys + 1] = pseudorandom_element(pool, pseudoseed('remember'))
+            end
+        end
+        local row_1 = {}
+        local row_2 = {}
+        local pool = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+        for _, j in pairs(keys) do
+            for k = 1, 2 do
+                local slot, index = pseudorandom_element(pool, pseudoseed('remember2'))
+                table.remove(pool, index)
+                if slot > 5 then
+                    row_2[slot - 5] = j
+                else
+                    row_1[slot] = j
+                end
+            end
+        end
+        for i, j in ipairs(row_1) do
+            local card = SMODS.create_card {key = j, no_edition = true}
+            G.memory_row_1:emplace(card)
+            card:flip()
+        end
+        for i, j in ipairs(row_2) do
+            local card = SMODS.create_card {key = j, no_edition = true}
+            G.memory_row_2:emplace(card)
+            card:flip()
+        end
+    else
+        G.memory_row_1:load(G.load_memory_row_1)
+        G.memory_row_2:load(G.load_memory_row_2)
+        G.load_memory_row_1 = nil
+        G.load_memory_row_2 = nil
+    end
+    G.GAME.dng_tries_left = G.GAME.dng_tries_left or 6
+
+
+    local shop_sign = AnimatedSprite(0,0, 4.4, 2.2, G.ANIMATION_ATLAS['shop_sign'])
+    shop_sign:define_draw_steps({
+      {shader = 'dissolve', shadow_height = 0.05},
+      {shader = 'dissolve'}
+    })
+    G.SHOP_SIGN = UIBox{
+      definition = 
+        {n=G.UIT.ROOT, config = {colour = G.C.DYN_UI.MAIN, emboss = 0.05, align = 'cm', r = 0.1, padding = 0.1}, nodes={
+          {n=G.UIT.R, config={align = "cm", padding = 0.1, minw = 4.72, minh = 3.1, colour = G.C.DYN_UI.DARK, r = 0.1}, nodes={
+            {n=G.UIT.R, config={align = "cm"}, nodes={
+              {n=G.UIT.O, config={object = shop_sign}}
+            }},
+            {n=G.UIT.R, config={align = "cm"}, nodes={
+              {n=G.UIT.O, config={object = DynaText({string = {localize('ph_test_memory')}, colours = {lighten(G.C.GOLD, 0.3)},shadow = true, rotate = true, float = true, bump = true, scale = 0.5, spacing = 1, pop_in = 1.5, maxw = 4.3})}}
+            }},
+          }},
+        }},
+      config = {
+        align="cm",
+        offset = {x=0,y=-15},
+        major = G.HUD:get_UIE_by_ID('row_blind'),
+        bond = 'Weak'
+      }
+    }
+    G.E_MANAGER:add_event(Event({
+      trigger = 'immediate',
+      func = (function()
+          G.SHOP_SIGN.alignment.offset.y = 0
+          return true
+      end)
+    }))
+
+
+    local t = {n=G.UIT.ROOT, config = {align = 'cl', colour = G.C.CLEAR}, nodes={
+            UIBox_dyn_container({
+                {n=G.UIT.C, config={align = "cm", padding = 0.1, emboss = 0.05, r = 0.1, colour = G.C.DYN_UI.BOSS_MAIN}, nodes={
+                rows[1], rows[2],
+                {n=G.UIT.R, config={align = "cm", padding = 0.1}, nodes={
+                    {n=G.UIT.C, config={align = "cm", minw = 2.8, minh = 0.7, r=0.04,colour = G.C.BLUE, button = 'play_memory', func = 'can_play_memory', hover = true,shadow = true}, nodes = {
+                        {n=G.UIT.R, config={align = "cm", padding = 0.07, focus_args = {button = 'x', orientation = 'cr'}, func = 'set_button_pip'}, nodes={
+                            {n=G.UIT.R, config={align = "cm", maxw = 1.3}, nodes={
+                                {n=G.UIT.T, config={text = localize('b_choose_cards'), scale = 0.4, colour = G.C.WHITE, shadow = true}},
+                            }},
+                            {n=G.UIT.R, config={align = "cm", maxw = 1.3, minw = 1}, nodes={
+                              {n=G.UIT.T, config={text = " (", scale = 0.4, colour = G.C.WHITE, shadow = true}},
+                              {n=G.UIT.T, config={ref_table = G.GAME, ref_value = 'dng_tries_left', scale = 0.4, colour = G.C.WHITE, shadow = true}},
+                              {n=G.UIT.T, config={text = ")", scale = 0.4, colour = G.C.WHITE, shadow = true}},
+                            }}
+                        }}
+                    }},
+                    {n=G.UIT.C, config={id = 'next_round_button', align = "cm", minw = 2.8, minh = 0.7, r=0.04,colour = G.C.RED, one_press = true, button = 'toggle_shop', hover = true,shadow = true}, nodes = {
+                        {n=G.UIT.R, config={align = "cm", padding = 0.07, focus_args = {button = 'x', orientation = 'cr'}, func = 'set_button_pip'}, nodes={
+                            {n=G.UIT.R, config={align = "cm", maxw = 1.3}, nodes={
+                                {n=G.UIT.T, config={text = localize('b_exit'), scale = 0.4, colour = G.C.WHITE, shadow = true}},
+                            }},
+                        }}
+                    }},
+                }}}
+            },
+              }, false)
+        }}
+    return t
+end
+
+--------------------------------
 
 table.insert(G.CHALLENGES,#G.CHALLENGES+1,
     {name = 'Dungeon',
