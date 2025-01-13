@@ -14,8 +14,8 @@ payload = '''self.P_ATTACKS = {
     debuff_2 = {order = 3, key = 'debuff_2', atlas = 'dng_attacks', name = "Debuff II", pos = {x=5,y=0}, set = "BlindEffect", effect = "", config = {odds = 5},  unlocked = true, discovered = true},
     raise_1 = {order = 4, key = 'raise_1', atlas = 'dng_attacks', name = "Raise I", pos = {x=4,y=0}, set = "BlindEffect", effect = "", config = {size = 1.2},  unlocked = true, discovered = true},
     raise_2 = {order = 5, key = 'raise_2', atlas = 'dng_attacks', name = "Raise II", pos = {x=1,y=1}, set = "BlindEffect", effect = "", config = {size = 1.5},  unlocked = true, discovered = true},
-    hide_1 = {order = 6, key = 'hide_1', atlas = 'dng_attacks', name = "Hide I", pos = {x=2,y=0}, set = "BlindEffect", effect = "", config = {cards = 3},  unlocked = true, discovered = true},
-    hide_2 = {order = 7, key = 'hide_2', atlas = 'dng_attacks', name = "Hide II", pos = {x=6,y=0}, set = "BlindEffect", effect = "", config = {cards = 6},  unlocked = true, discovered = true},
+    hide_1 = {order = 6, key = 'hide_1', atlas = 'dng_attacks', name = "Hide I", pos = {x=2,y=0}, set = "BlindEffect", effect = "", config = {cards = 1},  unlocked = true, discovered = true},
+    hide_2 = {order = 7, key = 'hide_2', atlas = 'dng_attacks', name = "Hide II", pos = {x=6,y=0}, set = "BlindEffect", effect = "", config = {cards = 3},  unlocked = true, discovered = true},
     ring_1 = {order = 8, key = 'ring_1', atlas = 'dng_attacks', name = "Ring I", pos = {x=3,y=0}, set = "BlindEffect", effect = "", config = {cards = 1},  unlocked = true, discovered = true},
     ring_2 = {order = 9, key = 'ring_2', atlas = 'dng_attacks', name = "Ring II", pos = {x=0,y=1}, set = "BlindEffect", effect = "", config = {cards = 2},  unlocked = true, discovered = true},
 }
