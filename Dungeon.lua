@@ -352,7 +352,7 @@ function calculate_blind_effect(key, context)
 end
 
 function add_dungeon_attack()
-    if G.GAME.blind.chips <= G.GAME.chips then
+    if to_big and (to_big(G.GAME.blind.chips) <= to_big(G.GAME.chips)) or (G.GAME.blind.chips <= G.GAME.chips) then
         return
     end
     if (G and G.GAME and G.GAME.blind and G.GAME.blind.config and G.GAME.blind.config.blind and G.GAME.blind.config.blind.name == "The Dealer") then
@@ -369,9 +369,9 @@ function add_dungeon_attack()
         local pool1 = {}
         for i = 1, #G.GAME.blind_attacks do
             local valid = true
-            if G.GAME.blind_attacks[i] == 'raise_1' and (G.GAME.blind.chips / 1.2 <= G.GAME.chips) then
+            if G.GAME.blind_attacks[i] == 'raise_1' and (to_big and (to_big(G.GAME.blind.chips) / 1.2 <= to_big(G.GAME.chips)) or (G.GAME.blind.chips / 1.2 <= G.GAME.chips)) then
                 valid = false
-            elseif G.GAME.blind_attacks[i] == 'raise_2' and (G.GAME.blind.chips / 1.5 <= G.GAME.chips) then
+            elseif G.GAME.blind_attacks[i] == 'raise_2' and (to_big and (to_big(G.GAME.blind.chips) / 1.5 <= to_big(G.GAME.chips)) or (G.GAME.blind.chips / 1.5 <= G.GAME.chips)) then
                 valid = false 
             end
             if valid then
@@ -456,7 +456,7 @@ function get_specific_pack(seed, cat)
 end
 
 G.FUNCS.can_common = function(e)
-    if ((G.GAME.dollars-G.GAME.bankrupt_at) - 3 < 0) then 
+    if to_big and ((to_big(G.GAME.dollars)-to_big(G.GAME.bankrupt_at)) - to_big(3) < to_big(0)) or ((G.GAME.dollars-G.GAME.bankrupt_at) - 3 < 0) then 
         e.config.colour = G.C.UI.BACKGROUND_INACTIVE
         e.config.button = nil
     else
@@ -506,7 +506,7 @@ G.FUNCS.make_common_loot = function(e)
 end
 
 G.FUNCS.can_uncommon = function(e)
-    if ((G.GAME.dollars-G.GAME.bankrupt_at) - 6 < 0) then 
+    if to_big and ((to_big(G.GAME.dollars)-to_big(G.GAME.bankrupt_at)) - to_big(6) < to_big(0)) or ((G.GAME.dollars-G.GAME.bankrupt_at) - 6 < 0) then 
         e.config.colour = G.C.UI.BACKGROUND_INACTIVE
         e.config.button = nil
     else
@@ -546,7 +546,7 @@ G.FUNCS.make_uncommon_loot = function(e)
 end
 
 G.FUNCS.can_rare = function(e)
-    if ((G.GAME.dollars-G.GAME.bankrupt_at) - 10 < 0) then 
+    if to_big and ((to_big(G.GAME.dollars)-to_big(G.GAME.bankrupt_at)) - to_big(10) < to_big(0)) or ((G.GAME.dollars-G.GAME.bankrupt_at) - 10 < 0) then 
         e.config.colour = G.C.UI.BACKGROUND_INACTIVE
         e.config.button = nil
     else
