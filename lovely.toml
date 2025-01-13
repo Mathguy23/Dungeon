@@ -392,7 +392,20 @@ payload = '''if _tag and _tag.config.ref_table then
             trigger = 'immediate',
             func = function()
             delay(0.3)
-            SMODS.calculate_context({skip_blind = true})
+            if SMODS.calculate_context then
+                SMODS.calculate_context({skip_blind = true})
+            else
+                for i = 1, #G.jokers.cards do
+                    G.jokers.cards[i]:calculate_joker({skip_blind = true})
+                end
+                save_run()
+                for i = 1, #G.GAME.tags do
+                    G.GAME.tags[i]:apply_to_run({type = 'immediate'})
+                end
+                for i = 1, #G.GAME.tags do
+                    if G.GAME.tags[i]:apply_to_run({type = 'new_blind_choice'}) then break end
+                end
+            end
             if _tag.config.ref_table.key == 'tag_dng_blackjack' then
                 dunegon_selection('bl_dng_dealer')
             elseif _tag.config.ref_table.key == 'tag_dng_memory' then
