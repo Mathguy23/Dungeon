@@ -81,7 +81,10 @@ match_indent = true
 target = 'functions/state_events.lua'
 pattern = '''if game_over then'''
 position = 'before'
-payload = '''if G.GAME.modifiers.dungeon and not game_over then
+payload = '''if game_over and (G and G.GAME and G.GAME.blind and G.GAME.blind.config and G.GAME.blind.config.blind and G.GAME.blind.config.blind.name == "The Dealer") then
+    game_over = false
+end
+if G.GAME.modifiers.dungeon and not game_over then
     local area = G.HUD_blind:get_UIE_by_ID("blind_attacks").children[1].children[1].config.object
     if G.GAME.blind_attacks then
         for i = #G.GAME.blind_attacks, 1, -1 do
