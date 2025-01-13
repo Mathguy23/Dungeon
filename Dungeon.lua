@@ -1024,11 +1024,13 @@ G.FUNCS.draw_from_deck_to_hand = function(e)
     end
 end
 
-local old_context = SMODS.calculate_context
-SMODS.calculate_context = function(context, return_table)
-    old_context(context, return_table)
-    if context.end_of_round and (G and G.GAME and G.GAME.blind and G.GAME.blind.config and G.GAME.blind.config.blind and G.GAME.blind.config.blind.name == "The Dealer") then
-        SMODS.saved = true
+if SMODS.calculate_context then
+    local old_context = SMODS.calculate_context
+    SMODS.calculate_context = function(context, return_table)
+        old_context(context, return_table)
+        if context.end_of_round and (G and G.GAME and G.GAME.blind and G.GAME.blind.config and G.GAME.blind.config.blind and G.GAME.blind.config.blind.name == "The Dealer") then
+            SMODS.saved = true
+        end
     end
 end
 
