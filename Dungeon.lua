@@ -976,8 +976,8 @@ G.FUNCS.stand = function(e)
                 end
             elseif bl_total > total then
                 play_area_status_text("Loss (" .. tostring(total) .. " < " .. tostring(bl_total) .. ")")
-                G.GAME.dng_busted = true
-                G.GAME.hit_limit = 0
+                G.GAME.hit_limit = 2
+                ease_hands_played(-1)
                 G.E_MANAGER:add_event(Event({
                     trigger = 'immediate',
                     func = function()
