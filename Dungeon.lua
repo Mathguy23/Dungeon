@@ -193,14 +193,6 @@ function dungeon_new_round(theBlind)
 
             -- local customBlind = {name = 'The Ox', defeated = false, order = 4, dollars = 5, mult = 2,  vars = {localize('ph_most_played')}, debuff = {}, pos = {x=0, y=2}, boss = {min = 6, max = 10, bonus = true}, boss_colour = HEX('b95b08')}
             G.GAME.blind_on_deck = 'Dungeon'
-            G.GAME.blind:set_blind(G.P_BLINDS[theBlind])
-            if G.GAME.modifiers.dungeon then
-                local amount = 3
-                if (G.GAME.blind_on_deck == "Small") then amount = 1 end
-                if (G.GAME.blind_on_deck == "Big") then amount = 2 end
-                for i = 1, amount do add_attack("blank") end
-                for i = 1, amount do add_dungeon_attack() end
-            end
             G.GAME.last_blind.boss = nil
             G.HUD_blind.alignment.offset.y = -10
             G.HUD_blind:recalculate(false)
@@ -220,207 +212,6 @@ function dungeon_new_round(theBlind)
             return true
             end
         }))
-end
-
-local old_HUD = create_UIBox_HUD_blind
-function create_UIBox_HUD_blind()
-    local t = old_HUD()
-    if G.GAME.modifiers.dungeon then
-        local blind_attacks = CardArea(
-            G.ROOM.T.x + 0.2*G.ROOM.T.w/2,G.ROOM.T.h,
-            2*G.CARD_W,
-            0.25*G.CARD_W, 
-        {card_limit = 5, type = 'play', highlight_limit = 0})
-        local a = {n=G.UIT.R, config={align = "cm", padding = 0, no_fill = true, id = 'blind_attacks'}, nodes={
-            {n=G.UIT.C, config={align = "cm", padding = 0, minh = 0.25*G.CARD_W, minw = (2)*G.CARD_W}, nodes = {{n=G.UIT.O, config={object = blind_attacks}}}},
-        }}
-        table.insert(t.nodes, a)
-    end
-    return t
-end
-
-function add_attack(key, index)
-    G.GAME.blind_attacks = G.GAME.blind_attacks or {}
-    local area = G.HUD_blind:get_UIE_by_ID("blind_attacks").children
-    area = area[1].children[1].config.object
-    if index and G.GAME.blind_attacks[index] and area.cards[index] then
-        calculate_blind_effect(G.GAME.blind_attacks[index], {remove = true, index = index})
-        area.cards[index]:set_ability(G.P_ATTACKS[key])
-        G.GAME.blind_attacks[index] = key
-        calculate_blind_effect(key, {add = true, index = index})
-    else
-        local attack = Card(0, 0, 0.8, 0.8, G.P_CARDS["empty"], G.P_ATTACKS[key])
-        area:emplace(attack)
-        G.GAME.blind_attacks[#area.cards] = key
-        calculate_blind_effect(key, {add = true, index = #area.cards})
-        return attack
-    end
-end
-
-function remove_attack(index)
-    G.GAME.blind_attacks = G.GAME.blind_attacks or {}
-    local area = G.HUD_blind:get_UIE_by_ID("blind_attacks").children[1].children[1].config.object
-    if index and G.GAME.blind_attacks[index] then
-        calculate_blind_effect(G.GAME.blind_attacks[index], {remove = true, index = index})
-        area.cards[index]:set_ability(G.P_ATTACKS["blank"])
-        G.GAME.blind_attacks[index] = "blank"
-    end
-end
-
-function calculate_blind_effect(key, context)
-    local area = G.HUD_blind:get_UIE_by_ID("blind_attacks").children[1].children[1].config.object
-    local ability_table = area.cards[context.index].ability
-    if context.remove then
-        if (key == 'debuff_1') or (key == 'debuff_2') then
-            for i = 1, #G.playing_cards do
-                if G.playing_cards[i].ability.temp_debuff == key .. tostring(context.index) then
-                    G.playing_cards[i].ability.temp_debuff = nil
-                    G.playing_cards[i]:set_debuff()
-                end
-            end
-        elseif (key == 'raise_1') or (key == 'raise_2') then
-            G.GAME.blind.chips = G.GAME.blind.chips / ability_table.size
-            G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
-        elseif (key == 'ring_1') or (key == 'ring_2') then
-            for k, v in ipairs(G.playing_cards) do
-                if v.ability.forced_selection == key .. tostring(context.index) then
-                    v.ability.forced_selection = nil
-                end
-            end
-        end
-    elseif context.add then
-        if (key == 'debuff_1') or (key == 'debuff_2') then
-            for i = 1, #G.playing_cards do
-                if not G.playing_cards[i].debuff and (pseudorandom('debuff') < G.GAME.probabilities.normal/ability_table.odds) then
-                    G.playing_cards[i].ability.temp_debuff = key .. tostring(context.index)
-                    G.playing_cards[i]:set_debuff()
-                end
-            end
-        elseif (key == 'raise_1') or (key == 'raise_2') then
-            G.GAME.blind.chips = G.GAME.blind.chips * ability_table.size
-            G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
-        elseif (key == 'ring_1') or (key == 'ring_2') then
-            local any_forced = 0
-            for k, v in ipairs(G.hand.cards) do
-                if v.ability.forced_selection == key .. tostring(context.index) then
-                    any_forced = any_forced + 1
-                end
-            end
-            if any_forced < ability_table.cards then 
-                local pool = {}
-                for i = 1, #G.hand.cards do
-                    table.insert(pool, G.hand.cards[i])
-                end
-                G.hand:unhighlight_all()
-                for i = 1, ability_table.cards - any_forced do
-                    if #pool > 0 then
-                        local forced_card, index = pseudorandom_element(pool, pseudoseed('ring'))
-                        forced_card.ability.forced_selection = key .. tostring(context.index)
-                        G.hand:add_to_highlighted(forced_card)
-                        table.remove(pool, index)
-                    end
-                end
-            end
-        end
-    elseif context.drawn_to_hand then
-        if (key == 'ring_1') or (key == 'ring_2') then
-            local any_forced = 0
-            for k, v in ipairs(G.hand.cards) do
-                if v.ability.forced_selection == key .. tostring(context.index) then
-                    any_forced = any_forced + 1
-                end
-            end
-            if any_forced < ability_table.cards then 
-                local pool = {}
-                for i = 1, #G.hand.cards do
-                    if not G.hand.cards[i].ability.forced_selection then
-                        table.insert(pool, G.hand.cards[i])
-                    end
-                end
-                G.hand:unhighlight_all()
-                for i = 1, ability_table.cards - any_forced do
-                    if #pool > 0 then
-                        local forced_card, index = pseudorandom_element(pool, pseudoseed('ring'))
-                        forced_card.ability.forced_selection = key .. tostring(context.index)
-                        G.hand:add_to_highlighted(forced_card)
-                        table.remove(pool, index)
-                    end
-                end
-            end
-        end
-    end
-end
-
-function add_dungeon_attack()
-    if to_big and (to_big(G.GAME.blind.chips) <= to_big(G.GAME.chips)) or (G.GAME.blind.chips <= G.GAME.chips) then
-        return
-    end
-    if (G and G.GAME and G.GAME.blind and G.GAME.blind.config and G.GAME.blind.config.blind and G.GAME.blind.config.blind.name == "The Dealer") then
-        return
-    end
-    local index = -1
-    for i = 1, #G.GAME.blind_attacks do
-        if G.GAME.blind_attacks[i] == "blank" then
-            index = i
-            break
-        end
-    end
-    if index == -1 then
-        local pool1 = {}
-        for i = 1, #G.GAME.blind_attacks do
-            local valid = true
-            if G.GAME.blind_attacks[i] == 'raise_1' and (to_big and (to_big(G.GAME.blind.chips) / 1.2 <= to_big(G.GAME.chips)) or (G.GAME.blind.chips / 1.2 <= G.GAME.chips)) then
-                valid = false
-            elseif G.GAME.blind_attacks[i] == 'raise_2' and (to_big and (to_big(G.GAME.blind.chips) / 1.5 <= to_big(G.GAME.chips)) or (G.GAME.blind.chips / 1.5 <= G.GAME.chips)) then
-                valid = false 
-            end
-            if valid then
-                table.insert(pool1, i)
-            end
-        end
-        if #pool1 == 0 then
-            return
-        end
-        index = pseudorandom_element(pool1, pseudoseed'attack')
-    end
-    local forced_selection_count = 0
-    for i, j in ipairs(G.GAME.blind_attacks) do
-        if j == 'ring_1' then
-            forced_selection_count = forced_selection_count + 1
-        elseif j == 'ring_2' then
-            forced_selection_count = forced_selection_count + 2
-        end
-    end
-    local pool = {}
-    local total = 0
-    for i, j in pairs(G.BL_EFFECT_PATTERNS[G.GAME.blind.config.blind.key] or G.BL_EFFECT_PATTERNS['bl_boss']) do
-        if i ~= G.GAME.blind_attacks[index] then
-            local valid = true
-            if i == 'ring_1' and (forced_selection_count > 2) then
-                valid = false
-            elseif i == 'ring_2' and (forced_selection_count > 1) then
-                valid = false
-            end
-            if valid then
-                total = total + j.weight
-                table.insert(pool, {key = i, weight = j.weight})
-            end
-        end
-    end
-    if #pool == 0 then
-        return
-    end
-    local picked = total * pseudorandom('dungeon')
-    local key = nil
-    while (picked > 0) and pool[1] do
-        key = pool[1].key
-        picked = picked - pool[1].weight
-        table.remove(pool, 1)
-    end
-    if not key then
-        key = pool[#pool].key
-    end
-    add_attack(key, index)
 end
 
 function get_specific_pack(seed, cat)
@@ -779,13 +570,13 @@ SMODS.Tag {
             return true
         end
     end,
-    config = {type = 'new_blind_choice'}
+    config = {type = 'new_blind_choice', minigame = true}
 }
 
 local old_buttons = create_UIBox_buttons
 function create_UIBox_buttons()
     local t = old_buttons()
-    if G and G.GAME and G.GAME.blind and G.GAME.blind.config and G.GAME.blind.config.blind and G.GAME.blind.config.blind.name == "The Dealer" then
+    if G and G.GAME and G.GAME.modifiers and G.GAME.modifiers.dungeon then
         local index = 3
         if G.SETTINGS.play_button_pos ~= 1 then
             index = 1
@@ -796,7 +587,7 @@ function create_UIBox_buttons()
         button.config.func = 'can_hit'
         -- button.config.color = G.C[checking[G.GAME.active].colour]
     end
-    if G and G.GAME and G.GAME.blind and G.GAME.blind.config and G.GAME.blind.config.blind and G.GAME.blind.config.blind.name == "The Dealer" then
+    if G and G.GAME and G.GAME.modifiers and G.GAME.modifiers.dungeon then
         local index = 1
         if G.SETTINGS.play_button_pos ~= 1 then
             index = 3
@@ -811,7 +602,7 @@ function create_UIBox_buttons()
 end
 
 G.FUNCS.can_hit = function(e)
-    if G.GAME.dng_busted or (#G.deck.cards == 0) then
+    if G.GAME.stood or G.GAME.dng_busted or (#G.deck.cards == 0) then
         e.config.colour = G.C.UI.BACKGROUND_INACTIVE
         e.config.button = nil
     else
@@ -833,7 +624,7 @@ G.FUNCS.hit = function(e)
 end
 
 G.FUNCS.can_stand = function(e)
-    if false then
+    if G.GAME.stood then
         e.config.colour = G.C.UI.BACKGROUND_INACTIVE
         e.config.button = nil
     else
@@ -845,6 +636,9 @@ end
 G.FUNCS.stand = function(e)
     local total = 0
     local aces = 0
+    G.GAME.dng_busted = nil
+    G.GAME.stood = true
+    G.enemy_deck:shuffle('enemy_deck')
     for i = 1, #G.hand.cards do
         local id = G.hand.cards[i]:get_id()
         if id > 0 then
@@ -858,10 +652,9 @@ G.FUNCS.stand = function(e)
             end
         end
     end
-    if total <= 11 and aces == 1 then
+    while (total < 21) and (aces >= 1) do
         total = total + 10
-    elseif total <= 1 and aces == 2 then
-        total = total + 20
+        aces = aces + 1
     end
     if total > 21 then
         total = -1
@@ -870,13 +663,13 @@ G.FUNCS.stand = function(e)
     local bl_aces = 0
     local bl_cards = 0
     while bl_total <= 21 do
-        local index = #G.deck.cards - bl_cards
+        local index = #G.enemy_deck.cards - bl_cards
         if index <= 0 then
             break
         else
-            local id = G.deck.cards[index]:get_id()
+            local id = G.enemy_deck.cards[index]:get_id()
             if id > 0 then
-                local rank = SMODS.Ranks[G.deck.cards[index].base.value] or {}
+                local rank = SMODS.Ranks[G.enemy_deck.cards[index].base.value] or {}
                 local nominal = rank.nominal
                 if rank.key == 'Ace' then
                     bl_total = bl_total + 11
@@ -906,7 +699,7 @@ G.FUNCS.stand = function(e)
         func = function()
             if bl_cards > 0 then
                 for i = 1, bl_cards do
-                    draw_card(G.deck, G.play, i*100/5, 'up')
+                    draw_card(G.enemy_deck, G.play, i*100/5, 'up')
                 end
             end
             delay(0.5)
@@ -916,55 +709,70 @@ G.FUNCS.stand = function(e)
                 else
                     play_area_status_text("Win (" .. tostring(total) .. " > " .. tostring(bl_total) .. ")")
                 end
-                local card = pseudorandom_element(G.hand.cards, pseudoseed('bj'))
-                card:set_seal(SMODS.poll_seal({guaranteed = true, type_key = 'certsl'}))
                 G.GAME.hit_limit = 2
+                ease_hands_played(1)
                 G.E_MANAGER:add_event(Event({
                     trigger = 'immediate',
                     func = function()
                         for i = 1, #G.play.cards do
-                            draw_card(G.play, G.discard, i*100/5, 'up')
+                            draw_card(G.play, G.enemy_deck, i*100/5, 'up')
                         end
-                        for i = 1, #G.hand.cards do
-                            draw_card(G.hand, G.discard, i*100/5, 'up')
-                        end
+                        G.E_MANAGER:add_event(Event({
+                            trigger = 'immediate',
+                            func = function()
+                                for i = 1, #G.hand.cards do
+                                    if not G.hand.cards[i].highlighted then
+                                        G.hand:add_to_highlighted(G.hand.cards[i])
+                                    end
+                                end
+                                G.FUNCS.play_cards_from_highlighted()
+                                G.GAME.dng_busted = nil
+                                G.E_MANAGER:add_event(Event({
+                                    trigger = 'immediate',
+                                    func = function()
+                                        G.GAME.stood = nil
+                                        return true
+                                    end
+                                }))
+                                return true
+                            end
+                        }))
                         return true
                     end
                 }))
                 if #G.deck.cards - bl_cards <= 0 then
                     G.GAME.dng_busted = true
                     G.GAME.hit_limit = 0
-                    -- G.GAME.blind.chips = 0
-                    -- G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
-                    G.E_MANAGER:add_event(Event({
-                        trigger = 'immediate',
-                        func = function()
-                            G.STATE = G.STATES.DRAW_TO_HAND
-                            G.STATE_COMPLETE = false
-                            return true
-                        end
-                    }))
                 end
             elseif bl_total == total then
-                play_area_status_text("Push (" .. tostring(total) .. " = " .. tostring(bl_total) .. ")")
+                if bl_total == -1 then
+                    play_area_status_text("Push (Bust = Bust)")
+                else
+                    play_area_status_text("Push (" .. tostring(total) .. " = " .. tostring(bl_total) .. ")")
+                end
                 G.GAME.hit_limit = 2
                 G.E_MANAGER:add_event(Event({
                     trigger = 'immediate',
                     func = function()
                         for i = 1, #G.play.cards do
-                            draw_card(G.play, G.discard, i*100/5, 'up')
+                            draw_card(G.play, G.enemy_deck, i*100/5, 'up')
                         end
                         for i = 1, #G.hand.cards do
                             draw_card(G.hand, G.discard, i*100/5, 'up')
                         end
+                        G.E_MANAGER:add_event(Event({
+                            trigger = 'immediate',
+                            func = function()
+                                G.GAME.stood = nil
+                                return true
+                            end
+                        }))
                         return true
                     end
                 }))
                 if #G.deck.cards - bl_cards <= 0 then
                     G.GAME.dng_busted = true
                     G.GAME.hit_limit = 0
-                    -- G.GAME.blind.chips = 0
-                    -- G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
                     G.E_MANAGER:add_event(Event({
                         trigger = 'immediate',
                         func = function()
@@ -975,34 +783,76 @@ G.FUNCS.stand = function(e)
                     }))
                 end
             elseif bl_total > total then
-                play_area_status_text("Loss (" .. tostring(total) .. " < " .. tostring(bl_total) .. ")")
+                if total == -1 then
+                    play_area_status_text("Loss (Bust < " .. tostring(bl_total) .. ")")
+                else
+                    play_area_status_text("Loss (" .. tostring(total) .. " < " .. tostring(bl_total) .. ")")
+                end
                 G.GAME.hit_limit = 2
                 ease_hands_played(-1)
                 G.E_MANAGER:add_event(Event({
                     trigger = 'immediate',
                     func = function()
-                        for i = 1, #G.play.cards do
-                            draw_card(G.play, G.discard, i*100/5, 'up')
-                        end
-                        for i = 1, #G.hand.cards do
-                            draw_card(G.hand, G.discard, i*100/5, 'up')
-                        end
+                        G.E_MANAGER:add_event(Event({
+                            trigger = 'immediate',
+                            func = function()
+                                for i = 1, #G.hand.cards do
+                                    draw_card(G.hand, G.discard, i*100/5, 'up')
+                                end
+                                G.GAME.negate_hand = true
+                                G.E_MANAGER:add_event(Event({
+                                    trigger = 'immediate',
+                                    func = function()
+                                        G.STATE = G.STATES.HAND_PLAYED
+                                        G.STATE_COMPLETE = true
+                                        return true
+                                    end
+                                }))
+                                G.E_MANAGER:add_event(Event({
+                                    trigger = 'immediate',
+                                    func = function()
+                                        G.FUNCS.evaluate_play()
+                                        return true
+                                    end
+                                }))
+                                G.E_MANAGER:add_event(Event({
+                                    trigger = 'immediate',
+                                    func = function()
+                                        local play_count = #G.play.cards
+                                        local it = 1
+                                        for k, v in ipairs(G.play.cards) do
+                                            if (not v.shattered) and (not v.destroyed) then 
+                                                draw_card(G.play,G.enemy_deck, it*100/play_count,'down', false, v)
+                                                it = it + 1
+                                            end
+                                        end
+                                        return true
+                                    end
+                                }))
+                                G.E_MANAGER:add_event(Event({
+                                    trigger = 'immediate',
+                                    func = function()
+                                        G.STATE_COMPLETE = false
+                                        return true
+                                    end
+                                }))
+                                G.GAME.dng_busted = nil
+                                G.E_MANAGER:add_event(Event({
+                                    trigger = 'immediate',
+                                    func = function()
+                                        G.GAME.stood = nil
+                                        return true
+                                    end
+                                }))
+                                return true
+                            end
+                        }))
                         return true
                     end
                 }))
                 if #G.deck.cards - bl_cards <= 0 then
                     G.GAME.dng_busted = true
                     G.GAME.hit_limit = 0
-                    -- G.GAME.blind.chips = 0
-                    -- G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
-                    G.E_MANAGER:add_event(Event({
-                        trigger = 'immediate',
-                        func = function()
-                            G.STATE = G.STATES.DRAW_TO_HAND
-                            G.STATE_COMPLETE = false
-                            return true
-                        end
-                    }))
                 end
             end
             return true
@@ -1012,7 +862,7 @@ end
 
 local old_draw_from_deck = G.FUNCS.draw_from_deck_to_hand
 G.FUNCS.draw_from_deck_to_hand = function(e)
-    if G and G.GAME and G.GAME.blind and G.GAME.blind.config and G.GAME.blind.config.blind and G.GAME.blind.config.blind.name == "The Dealer" then
+    if G and G.GAME and G.GAME.modifiers and G.GAME.modifiers.dungeon and not (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.SMODS_BOOSTER_OPENED) then
         local hand_space =  math.max(0, (G.GAME.hit_limit or 2) - #G.hand.cards)
         if hand_space >= 1 then
             for i = 1, hand_space do
@@ -1021,16 +871,6 @@ G.FUNCS.draw_from_deck_to_hand = function(e)
         end
     else
         old_draw_from_deck()
-    end
-end
-
-if SMODS.calculate_context then
-    local old_context = SMODS.calculate_context
-    SMODS.calculate_context = function(context, return_table)
-        old_context(context, return_table)
-        if context.end_of_round and (G and G.GAME and G.GAME.blind and G.GAME.blind.config and G.GAME.blind.config.blind and G.GAME.blind.config.blind.name == "The Dealer") then
-            SMODS.saved = true
-        end
     end
 end
 
@@ -1078,7 +918,7 @@ SMODS.Tag {
             return true
         end
     end,
-    config = {type = 'immediate'}
+    config = {type = 'immediate', minigame = true}
 }
 
 function G.UIDEF.memory()
@@ -1256,19 +1096,22 @@ table.insert(G.CHALLENGES,#G.CHALLENGES+1,
         rules = {
             custom = {
                 {id = 'dungeon'},
-                {id = 'ante_hand_discard_reset'},
-                {id = 'no_extra_hand_money'},
+                -- {id = 'ante_hand_discard_reset'},
+                -- {id = 'no_extra_hand_money'},
                 {id = 'dungeon_1_ante_4'},
                 {id = 'dungeon_1_ante_8'},
             },
             modifiers = {
-                {id = 'hands', value = 8},
+                {id = 'hands', value = 4},
                 {id = 'discards', value = 6},
             }
         },
-        jokers = {       
+        jokers = {   
+            {id = 'j_splash', eternal = true, edition = 'negative'},
         },
         consumeables = {
+            {id = 'c_black_hole'},
+            {id = 'c_black_hole'},
         },
         vouchers = {
         },
@@ -1293,10 +1136,251 @@ table.insert(G.CHALLENGES,#G.CHALLENGES+1,
                 {id = 'tag_coupon'},
             },
             banned_other = {
+                {id = 'bl_hook', type = 'blind'},
+                {id = 'bl_psychic', type = 'blind'},
+                {id = 'bl_manacle', type = 'blind'},
+                {id = 'bl_eye', type = 'blind'},
+                {id = 'bl_serpent', type = 'blind'},
+                {id = 'bl_final_bell', type = 'blind'},
             }
         },
     }
 )
+
+function G.UIDEF.view_enemy_deck(unplayed_only)
+	local deck_tables = {}
+	remove_nils(G.enemy_cards or {})
+	G.VIEWING_DECK = true
+	table.sort(G.enemy_cards or {}, function(a, b) return a:get_nominal('suit') > b:get_nominal('suit') end)
+	local SUITS = {}
+	local suit_map = {}
+	for i = #SMODS.Suit.obj_buffer, 1, -1 do
+		SUITS[SMODS.Suit.obj_buffer[i]] = {}
+		suit_map[#suit_map + 1] = SMODS.Suit.obj_buffer[i]
+	end
+	for k, v in ipairs(G.enemy_cards or {}) do
+		if v.base.suit then table.insert(SUITS[v.base.suit], v) end
+	end
+	local num_suits = 0
+	for j = 1, #suit_map do
+		if SUITS[suit_map[j]][1] then num_suits = num_suits + 1 end
+	end
+	for j = 1, #suit_map do
+		if SUITS[suit_map[j]][1] then
+			local view_deck = CardArea(
+				G.ROOM.T.x + 0.2 * G.ROOM.T.w / 2, G.ROOM.T.h,
+				6.5 * G.CARD_W,
+				((num_suits > 8) and 0.2 or (num_suits > 4) and (1 - 0.1 * num_suits) or 0.6) * G.CARD_H,
+				{
+					card_limit = #SUITS[suit_map[j]],
+					type = 'title',
+					view_deck = true,
+					highlight_limit = 0,
+					card_w = G
+						.CARD_W * 0.7,
+					draw_layers = { 'card' }
+				})
+			table.insert(deck_tables,
+				{n = G.UIT.R, config = {align = "cm", padding = 0}, nodes = {
+					{n = G.UIT.O, config = {object = view_deck}}}}
+			)
+
+			for i = 1, #SUITS[suit_map[j]] do
+				if SUITS[suit_map[j]][i] then
+					local greyed, _scale = nil, 0.7
+					local copy = copy_card(SUITS[suit_map[j]][i], nil, _scale)
+					copy.greyed = greyed
+					copy.T.x = view_deck.T.x + view_deck.T.w / 2
+					copy.T.y = view_deck.T.y
+
+					copy:hard_set_T()
+					view_deck:emplace(copy)
+				end
+			end
+		end
+	end
+
+	local flip_col = G.C.WHITE
+
+	local suit_tallies = {}
+	local mod_suit_tallies = {}
+	for _, v in ipairs(suit_map) do
+		suit_tallies[v] = 0
+		mod_suit_tallies[v] = 0
+	end
+	local rank_tallies = {}
+	local mod_rank_tallies = {}
+	local rank_name_mapping = SMODS.Rank.obj_buffer
+	for _, v in ipairs(rank_name_mapping) do
+		rank_tallies[v] = 0
+		mod_rank_tallies[v] = 0
+	end
+	local face_tally = 0
+	local mod_face_tally = 0
+	local num_tally = 0
+	local mod_num_tally = 0
+	local ace_tally = 0
+	local mod_ace_tally = 0
+	local wheel_flipped = 0
+
+	for k, v in ipairs(G.enemy_cards or {}) do
+		if v.ability.name ~= 'Stone Card' then
+			--For the suits
+			if v.base.suit then suit_tallies[v.base.suit] = (suit_tallies[v.base.suit] or 0) + 1 end
+			for kk, vv in pairs(mod_suit_tallies) do
+				mod_suit_tallies[kk] = (vv or 0) + (v:is_suit(kk) and 1 or 0)
+			end
+
+			--for face cards/numbered cards/aces
+			local card_id = v:get_id()
+			if v.base.value then face_tally = face_tally + ((SMODS.Ranks[v.base.value].face) and 1 or 0) end
+			mod_face_tally = mod_face_tally + (v:is_face() and 1 or 0)
+			if v.base.value and not SMODS.Ranks[v.base.value].face and card_id ~= 14 then
+				num_tally = num_tally + 1
+				if not v.debuff then mod_num_tally = mod_num_tally + 1 end
+			end
+			if card_id == 14 then
+				ace_tally = ace_tally + 1
+				if not v.debuff then mod_ace_tally = mod_ace_tally + 1 end
+			end
+
+			--ranks
+			if v.base.value then rank_tallies[v.base.value] = rank_tallies[v.base.value] + 1 end
+			if v.base.value and not v.debuff then mod_rank_tallies[v.base.value] = mod_rank_tallies[v.base.value] + 1 end
+		end
+	end
+	local modded = face_tally ~= mod_face_tally
+	for kk, vv in pairs(mod_suit_tallies) do
+		modded = modded or (vv ~= suit_tallies[kk])
+		if modded then break end
+	end
+
+	if wheel_flipped > 0 then flip_col = mix_colours(G.C.FILTER, G.C.WHITE, 0.7) end
+
+	local rank_cols = {}
+	for i = #rank_name_mapping, 1, -1 do
+		if rank_tallies[rank_name_mapping[i]] ~= 0 or not SMODS.Ranks[rank_name_mapping[i]].in_pool or SMODS.Ranks[rank_name_mapping[i]]:in_pool({suit=''}) then
+			local mod_delta = mod_rank_tallies[rank_name_mapping[i]] ~= rank_tallies[rank_name_mapping[i]]
+			rank_cols[#rank_cols + 1] = {n = G.UIT.R, config = {align = "cm", padding = 0.07}, nodes = {
+				{n = G.UIT.C, config = {align = "cm", r = 0.1, padding = 0.04, emboss = 0.04, minw = 0.5, colour = G.C.L_BLACK}, nodes = {
+					{n = G.UIT.T, config = {text = SMODS.Ranks[rank_name_mapping[i]].shorthand, colour = G.C.JOKER_GREY, scale = 0.35, shadow = true}},}},
+				{n = G.UIT.C, config = {align = "cr", minw = 0.4}, nodes = {
+					mod_delta and {n = G.UIT.O, config = {
+							object = DynaText({
+								string = { { string = '' .. rank_tallies[rank_name_mapping[i]], colour = flip_col }, { string = '' .. mod_rank_tallies[rank_name_mapping[i]], colour = G.C.BLUE } },
+								colours = { G.C.RED }, scale = 0.4, y_offset = -2, silent = true, shadow = true, pop_in_rate = 10, pop_delay = 4
+							})}}
+					or {n = G.UIT.T, config = {text = rank_tallies[rank_name_mapping[i]], colour = flip_col, scale = 0.45, shadow = true } },}}}}
+		end
+	end
+
+	local tally_ui = {
+		-- base cards
+		{n = G.UIT.R, config = {align = "cm", minh = 0.05, padding = 0.07}, nodes = {
+			{n = G.UIT.O, config = {
+					object = DynaText({ 
+						string = { 
+							{ string = localize('k_base_cards'), colour = G.C.RED }, 
+							modded and { string = localize('k_effective'), colour = G.C.BLUE } or nil
+						},
+						colours = { G.C.RED }, silent = true, scale = 0.4, pop_in_rate = 10, pop_delay = 4
+					})
+				}}}},
+		-- aces, faces and numbered cards
+		{n = G.UIT.R, config = {align = "cm", minh = 0.05, padding = 0.1}, nodes = {
+			tally_sprite(
+				{ x = 1, y = 0 },
+				{ { string = '' .. ace_tally, colour = flip_col }, { string = '' .. mod_ace_tally, colour = G.C.BLUE } },
+				{ localize('k_aces') }
+			), --Aces
+			tally_sprite(
+				{ x = 2, y = 0 },
+				{ { string = '' .. face_tally, colour = flip_col }, { string = '' .. mod_face_tally, colour = G.C.BLUE } },
+				{ localize('k_face_cards') }
+			), --Face
+			tally_sprite(
+				{ x = 3, y = 0 },
+				{ { string = '' .. num_tally, colour = flip_col }, { string = '' .. mod_num_tally, colour = G.C.BLUE } },
+				{ localize('k_numbered_cards') }
+			), --Numbers
+		}},
+	}
+	-- add suit tallies
+	local hidden_suits = {}
+	for _, suit in ipairs(suit_map) do
+		if suit_tallies[suit] == 0 and SMODS.Suits[suit].in_pool and not SMODS.Suits[suit]:in_pool({rank=''}) then
+			hidden_suits[suit] = true
+		end
+	end
+	local i = 1
+	local num_suits_shown = 0
+	for i = 1, #suit_map do
+		if not hidden_suits[suit_map[i]] then
+			num_suits_shown = num_suits_shown+1
+		end
+	end
+	local suits_per_row = num_suits_shown > 6 and 4 or num_suits_shown > 4 and 3 or 2
+	local n_nodes = {}
+	while i <= #suit_map do
+		while #n_nodes < suits_per_row and i <= #suit_map do
+			if not hidden_suits[suit_map[i]] then
+				table.insert(n_nodes, tally_sprite(
+					SMODS.Suits[suit_map[i]].ui_pos,
+					{
+						{ string = '' .. suit_tallies[suit_map[i]], colour = flip_col },
+						{ string = '' .. mod_suit_tallies[suit_map[i]], colour = G.C.BLUE }
+					},
+					{ localize(suit_map[i], 'suits_plural') },
+					suit_map[i]
+				))
+			end
+			i = i + 1
+		end
+		if #n_nodes > 0 then
+			local n = {n = G.UIT.R, config = {align = "cm", minh = 0.05, padding = 0.1}, nodes = n_nodes}
+			table.insert(tally_ui, n)
+			n_nodes = {}
+		end
+	end
+	local t = {n = G.UIT.ROOT, config = {align = "cm", colour = G.C.CLEAR}, nodes = {
+		{n = G.UIT.R, config = {align = "cm", padding = 0.05}, nodes = {}},
+		{n = G.UIT.R, config = {align = "cm"}, nodes = {
+			{n = G.UIT.C, config = {align = "cm", minw = 1.5, minh = 2, r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes = {
+				{n = G.UIT.C, config = {align = "cm", padding = 0.1}, nodes = {
+					{n = G.UIT.R, config = {align = "cm", r = 0.1, colour = G.C.L_BLACK, emboss = 0.05, padding = 0.15}, nodes = {
+						{n = G.UIT.R, config = {align = "cm"}, nodes = {
+							{n = G.UIT.O, config = {
+									object = DynaText({ string = G.GAME.selected_back.loc_name, colours = {G.C.WHITE}, bump = true, rotate = true, shadow = true, scale = 0.6 - string.len(G.GAME.selected_back.loc_name) * 0.01 })
+								}},}},
+						{n = G.UIT.R, config = {align = "cm", r = 0.1, padding = 0.1, minw = 2.5, minh = 1.3, colour = G.C.WHITE, emboss = 0.05}, nodes = {
+							{n = G.UIT.O, config = {
+									object = UIBox {
+										definition = G.GAME.selected_back:generate_UI(nil, 0.7, 0.5, G.GAME.challenge), config = {offset = { x = 0, y = 0 } }
+									}
+								}}}}}},
+					{n = G.UIT.R, config = {align = "cm", r = 0.1, outline_colour = G.C.L_BLACK, line_emboss = 0.05, outline = 1.5}, nodes = 
+						tally_ui}}},
+				{n = G.UIT.C, config = {align = "cm"}, nodes = rank_cols},
+				{n = G.UIT.B, config = {w = 0.1, h = 0.1}},}},
+			{n = G.UIT.B, config = {w = 0.2, h = 0.1}},
+			{n = G.UIT.C, config = {align = "cm", padding = 0.1, r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes =
+				deck_tables}}},
+		{n = G.UIT.R, config = {align = "cm", minh = 0.8, padding = 0.05}, nodes = {
+			modded and {n = G.UIT.R, config = {align = "cm"}, nodes = {
+				{n = G.UIT.C, config = {padding = 0.3, r = 0.1, colour = mix_colours(G.C.BLUE, G.C.WHITE, 0.7)}, nodes = {}},
+				{n = G.UIT.T, config = {text = ' ' .. localize('ph_deck_preview_effective'), colour = G.C.WHITE, scale = 0.3}},}}
+			or nil,
+			wheel_flipped > 0 and {n = G.UIT.R, config = {align = "cm"}, nodes = {
+				{n = G.UIT.C, config = {padding = 0.3, r = 0.1, colour = flip_col}, nodes = {}},
+				{n = G.UIT.T, config = {
+						text = ' ' .. (wheel_flipped > 1 and
+							localize { type = 'variable', key = 'deck_preview_wheel_plural', vars = { wheel_flipped } } or
+							localize { type = 'variable', key = 'deck_preview_wheel_singular', vars = { wheel_flipped } }),
+						colour = G.C.WHITE, scale = 0.3
+					}},}}
+			or nil,}}}}
+	return t
+end
 
 ----------------------------------------------
 ------------MOD CODE END----------------------

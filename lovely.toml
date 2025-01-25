@@ -5,682 +5,6 @@ priority = 0
 
 [[patches]]
 [patches.pattern]
-target = 'functions/common_events.lua'
-pattern = '''elseif specific_vars and (card_type == 'Default' or card_type == 'Enhanced') then'''
-position = 'before'
-payload = '''elseif specific_vars and type(specific_vars.collect) == "table" then
-    full_UI_table.name = {}
-    localize{type = 'other', key = specific_vars.collect.key, set = 'Other', nodes = full_UI_table.name, vars = {}}
-    full_UI_table.name = full_UI_table.name[1]'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/common_events.lua'
-pattern = '''localize{type = 'other', key = _c.key, nodes = desc_nodes, vars = specific_vars or _c.vars}'''
-position = 'after'
-payload = '''elseif specific_vars and not specific_vars.debuffed and type(specific_vars.collect) == "table" then
-    local config_thing = specific_vars.collect.config
-    if specific_vars.collect.name == "Flint Card" then
-        loc_vars = {localize("Hearts", 'suits_plural'), localize("Diamonds", 'suits_plural'), config_thing.mult}
-    elseif specific_vars.collect.name == "Eye Card" then
-        loc_vars = {localize("Spades", 'suits_plural'), localize("Clubs", 'suits_plural'), config_thing.chips}
-    elseif specific_vars.collect.name == "Scholar's Mate" then
-        loc_vars = {localize("Queen", 'ranks'), config_thing.chips, config_thing.mult}
-    elseif specific_vars.collect.name == "Scandinavian Defense" then
-        loc_vars = {localize("Queen", 'ranks'), config_thing.chips, config_thing.mult, localize("Spades", 'suits_plural'), localize("Clubs", 'suits_plural')}
-    elseif specific_vars.collect.name == "Double Up" then
-        loc_vars = {config_thing.retriggers}
-    elseif specific_vars.collect.name == "Playable Joker" then
-        loc_vars = {G.GAME.probabilities.normal, config_thing.odds}
-        info_queue[#info_queue + 1] = G.P_CENTERS['e_foil']
-        info_queue[#info_queue + 1] = G.P_CENTERS['e_holo']
-        info_queue[#info_queue + 1] = G.P_CENTERS['e_polychrome']
-    elseif specific_vars.collect.name == "Sunflower" then
-        loc_vars = {config_thing.chips, config_thing.gain}
-    elseif specific_vars.collect.name == "Rules Card" then
-        loc_vars = {config_thing.discards}
-    elseif specific_vars.collect.name == "Wild Draw 4" then
-        loc_vars = {config_thing.chips, config_thing.cards}
-    elseif specific_vars.collect.name == "Jack in a Box" then
-        loc_vars = {config_thing.chips, config_thing.scores, config_thing.scored}
-    elseif specific_vars.collect.name == "2mbstone" then
-        loc_vars = {config_thing.chips, G.GAME.probabilities.normal, config_thing.odds}
-        info_queue[#info_queue + 1] = G.P_CENTERS['c_death']
-    elseif specific_vars.collect.name == "Mane 6" then
-        loc_vars = {config_thing.chips, config_thing.x_mult}
-    elseif specific_vars.collect.name == "Blank Card" then
-        local ranks = {'', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace'}
-        loc_vars = {config_thing.rank and localize(ranks[config_thing.rank], 'ranks') or "None"}
-    elseif specific_vars.collect.name == ":3" then
-        info_queue[#info_queue+1] = {key = 'perishable', set = 'Other', vars = {G.GAME.perishable_rounds or 1, G.GAME.perishable_rounds or 1}}
-        loc_vars = {config_thing.chips, config_thing.scores, math.max(0, config_thing.scores - config_thing.scored)}
-    elseif specific_vars.collect.name == "Golden Ratio" then
-        loc_vars = {localize("Diamonds", 'suits_plural'), localize("2", 'ranks'), localize("3", 'ranks'), localize("5", 'ranks'), localize("8", 'ranks'), localize("Ace", 'ranks'), tostring(config_thing.x_mult), config_thing.dollars}
-    elseif specific_vars.collect.name == "Pocket Ace" then
-        loc_vars = {localize("Spades", 'suits_plural'), localize("Ace", 'ranks'), config_thing.h_chips}
-    elseif specific_vars.collect.name == "Haunted Card" then
-        info_queue[#info_queue+1] = {key = 'phantom', set = 'Other'}
-        loc_vars = {config_thing.cards}
-    elseif specific_vars.collect.name == "Executor" then
-        loc_vars = {config_thing.chips, config_thing.destroys, config_thing.destroyed}
-    elseif specific_vars.collect.name == "Monarch" then
-        loc_vars = {config_thing.chips, localize("Hearts", 'suits_plural'), localize("Spades", 'suits_plural'), localize("Clubs", 'suits_plural')}
-    elseif specific_vars.collect.name == "Meteor" then
-        info_queue[#info_queue + 1] = G.P_CENTERS['m_stone']
-        info_queue[#info_queue+1] = {key = 'fleeting', set = 'Other'}
-        loc_vars = {config_thing.chips, config_thing.cards}
-    elseif specific_vars.collect.name == "Aluminum Plate" then
-        loc_vars = {config_thing.h_x_mult}
-    elseif specific_vars.collect.name == "Fortune Orb" then
-        info_queue[#info_queue+1] = {key = 'phantom', set = 'Other'}
-        loc_vars = {config_thing.cards}
-    elseif specific_vars.collect.name == "Bust Card" then
-        loc_vars = {config_thing.mult, config_thing.cards}
-    elseif specific_vars.collect.name == "Old Bell" then
-        loc_vars = {localize("Clubs", 'suits_plural'), config_thing.chips, config_thing.x_mult}
-    end
-    localize{type = 'descriptions', key = specific_vars.collect.key, set = "CustomCard", nodes = desc_nodes, vars = loc_vars}
-    if specific_vars.bonus_chips then
-        localize{type = 'other', key = 'card_extra_chips', nodes = desc_nodes, vars = {specific_vars.bonus_chips}}
-    end
-    if specific_vars and specific_vars.bonus_mult then
-        localize{type = 'other', key = 'card_extra_mult', nodes = desc_nodes, vars = {specific_vars.bonus_mult}}
-    end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'game.lua'
-pattern = '''self.P_LOCKED = {}'''
-position = 'after'
-payload = '''self.P_TRADING = {
-    flint_card = {order = 1, key = 'flint_card', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Flint Card", pos = {x=1,y=0}, set = "CustomCard", config = {mult = 8}, base = "H_A"},
-    scholar_mate = {order = 2, key = 'scholar_mate', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Scholar's Mate", pos = {x=3,y=0}, set = "CustomCard", config = {chips = 10, mult = 12}, base = "S_Q"},
-    scandinavian_defense = {order = 3, key = 'scandinavian_defense', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Scandinavian Defense", pos = {x=2,y=0}, set = "CustomCard", config = {chips = 10, mult = 12}, base = "S_Q"},
-    double_up = {order = 4, key = 'double_up', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Double Up", pos = {x=3,y=1}, set = "CustomCard", config = {retriggers = 1}, base = "S_Q"},
-    eye_card = {order = 5, key = 'eye_card', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Eye Card", pos = {x=4,y=1}, set = "CustomCard", config = {chips = 60}, base = "C_A"},
-    playable_joker = {order = 6, key = 'playable_joker', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Playable Joker", pos = {x=0,y=0}, set = "CustomCard", config = {odds = 4}, base = "S_2"},
-    sunflower = {order = 7, key = 'sunflower', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Sunflower", pos = {x=0,y=2}, set = "CustomCard", config = {chips = 8, gain = 6}, base = "D_8"},
-    rules_card = {order = 8, key = 'rules_card', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Rules Card", pos = {x=1,y=2}, set = "CustomCard", config = {discards = 1}, base = "S_A"},
-    wild_draw_4 = {order = 9, key = 'wild_draw_4', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Wild Draw 4", pos = {x=2,y=2}, set = "CustomCard", config = {chips = 4, cards = 4}, base = "C_4"},
-    jack_in_a_box = {order = 10, key = 'jack_in_a_box', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Jack in a Box", pos = {x=3,y=2}, set = "CustomCard", config = {chips = 10, scores = 3, scored = 0}, base = "C_J"},
-    tombstone = {order = 11, key = 'tombstone', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "2mbstone", pos = {x=4,y=2}, set = "CustomCard", config = {chips = 2, odds = 3}, base = "S_2"},
-    mane_6 = {order = 12, key = 'mane_6', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Mane 6", pos = {x=0,y=3}, set = "CustomCard", config = {chips = 6, x_mult = 0.2}, base = "H_6"},
-    blank_card = {order = 13, key = 'blank_card', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Blank Card", pos = {x=1,y=3}, set = "CustomCard", config = {}, base = "H_A"},
-    colon_3 = {order = 14, key = 'colon_3', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = ":3", pos = {x=2,y=3}, set = "CustomCard", config = {chips = 3, scores = 33, scored = 0}, base = "D_3"},
-    golden_ratio = {order = 15, key = 'golden_ratio', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Golden Ratio", pos = {x=3,y=3}, set = "CustomCard", config = {dollars = 1, x_mult = 1.618}, base = "D_2"},
-    double_down = {order = 16, key = 'double_down', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Double Down", pos = {x=4,y=3}, set = "CustomCard", config = {}, base = "H_Q"},
-    pocket_ace = {order = 17, key = 'pocket_ace', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Pocket Ace", pos = {x=0,y=4}, set = "CustomCard", config = {h_chips = 30}, base = "S_A"},
-    haunted_card = {order = 18, key = 'haunted_card', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Haunted Card", pos = {x=1,y=4}, set = "CustomCard", config = {cards = 4}, base = "S_3"},
-    executor = {order = 19, key = 'executor', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Executor", pos = {x=2,y=4}, set = "CustomCard", config = {chips = 3, destroys = 3, destroyed = 0}, base = "C_3"},
-    monarch = {order = 20, key = 'monarch', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Monarch", pos = {x=3,y=4}, set = "CustomCard", config = {chips = 50}, base = "S_K"},
-    meteor = {order = 21, key = 'meteor', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Meteor", pos = {x=4,y=4}, set = "CustomCard", config = {chips = 50, cards = 2}, base = "D_A"},
-    aluminum_plate = {order = 22, key = 'aluminum_plate', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Aluminum Plate", pos = {x=0,y=5}, set = "CustomCard", config = {h_x_mult = 1.8}, base = "S_8"},
-    fortune_orb = {order = 23, key = 'fortune_orb', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Fortune Orb", pos = {x=1,y=5}, set = "CustomCard", config = {cards = 2}, base = "S_Q"},
-    bust_card = {order = 24, key = 'bust_card', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Bust Card", pos = {x=2,y=5}, set = "CustomCard", config = {mult = 22, cards = 2}, base = "H_2"},
-    old_bell = {order = 25, key = 'old_bell', unlocked = true, discovered = true, atlas = 'pc_trading', cost = 1, name = "Old Bell", pos = {x=3,y=5}, set = "CustomCard", config = {chips = 10, x_mult = 3}, base = "C_K"},
- }'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''self.children.center:set_sprite_pos(_center.pos)'''
-position = 'after'
-payload = '''if self.ability and self.ability.trading and self.ability.trading.atlas then
-    self.children.center.atlas = G.ASSET_ATLAS[self.ability.trading.atlas]
-    self.children.center:set_sprite_pos(self.ability.trading.pos)
-end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''elseif self.config.center.consumeable and self.config.center.demo then'''
-position = 'before'
-payload = '''elseif self.ability and self.ability.trading and self.ability.trading.atlas then
-    self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[self.ability.trading.atlas], self.ability.trading.pos)
-'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/common_events.lua'
-pattern = '''if not strip_edition then'''
-position = 'before'
-payload = '''new_card:set_sprites(new_card.config.center)'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-pattern = '''for i=1, #pures do'''
-position = 'before'
-payload = '''for k=1, #G.play.cards do
-    local eval = G.play.cards[k]:calculate_exotic({cardarea = G.play, full_hand = G.play.cards, scoring_name = text, poker_hands = poker_hands, does_score = true})
-    if eval then
-        if eval == "remove" then
-            local inside = false
-            for j=1, #scoring_hand do
-                if scoring_hand[j] == G.play.cards[k] then
-                    inside = j
-                end
-            end
-            if inside then
-                table.remove(scoring_hand, inside)
-            end
-        else
-            local inside = false
-            for j=1, #scoring_hand do
-                if scoring_hand[j] == G.play.cards[k] then
-                    inside = true
-                end
-            end
-            if not inside then
-                table.insert(scoring_hand, G.play.cards[k])
-            end
-        end
-    end
-end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''function Card:is_suit(suit, bypass_debuff, flush_calc)'''
-position = 'after'
-payload = '''   if self.ability and self.ability.trading then
-        local eval = self:calculate_exotic({bypass_debuff = bypass_debuff, flush_calc = flush_calc, is_suit = suit})
-        if eval then
-            return eval
-        end
-    end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''function Card:get_id()'''
-position = 'after'
-payload = '''   if self.ability and self.ability.trading then
-        local eval = self:calculate_exotic({get_id = true})
-        if eval then
-            return eval
-        end
-    end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''function Card:can_use_consumeable(any_state, skip_check)'''
-position = 'after'
-payload = '''   if (self.ability.name == 'Strength') or self.ability.consumeable.suit_conv then 
-        for i = 1, #G.hand.highlighted do
-            if G.hand.highlighted[i].ability and G.hand.highlighted[i].ability.trading then return false end
-        end
-    end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-pattern = '''--calculate the hand effects'''
-position = 'before'
-payload = '''if (reps[j] ~= 1) then
-    local _, eff = next(reps[j])
-    if eff.cards then
-        for k = #eff.cards - 1, 1, -1 do
-            card_eval_status_text(eff.cards[k], 'jokers', nil, nil, nil, eff)
-        end
-    end
-end
-'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'game.lua'
-pattern = '''table.sort(self.P_CENTER_POOLS["Seal"], function (a, b) return a.order < b.order end)'''
-position = 'after'
-payload = '''table.sort(self.P_CENTER_POOLS["Exotic"], function (a, b) return a.order < b.order end)'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'game.lua'
-pattern = '''for k, v in pairs(self.P_STAKES) do'''
-position = 'before'
-payload = '''for k, v in pairs(self.P_TRADING) do
-    v.key = k
-    if not v.wip and not v.demo then 
-        table.insert(self.P_CENTER_POOLS["Exotic"], v)
-    end
-end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'game.lua'
-pattern = '''Stake = {},'''
-position = 'after'
-payload = '''Exotic = {},'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''function Card:set_ability(center, initial, delay_sprites)'''
-position = 'after'
-payload = '''   if self.ability and self.ability.trading and (center ~= G.P_CENTERS["m_pc_trading"]) then
-        self.ability.trading = nil
-    elseif self.ability and not self.ability.trading and (center == G.P_CENTERS["m_pc_trading"]) then
-        local key = G.P_TRADING[get_trading_key()]
-        self.ability.trading = copy_table(key)
-    end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/common_events.lua'
-pattern = '''function eval_card(card, context)'''
-position = 'after'
-payload = '''   local special_eval = nil
-    if context.discard and (context.full_hand == G.hand.highlighted) then
-        special_eval = card:calculate_exotic({discard = true, full_hand = G.hand.highlighted, other_card = context.other_card}, {})
-    end
-    if special_eval and special_eval.remove then
-        ret.remove = true
-    end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-pattern = '''local cards = {}'''
-position = 'before'
-payload = '''for j = 1, #G.hand.highlighted do
-    G.hand.highlighted[j]:calculate_exotic({pre_discard = true, full_hand = G.hand.highlighted}, {})
-end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-pattern = '''local hand_text_set = false'''
-position = 'before'
-payload = '''for k=1, #G.play.cards do
-    G.play.cards[k]:calculate_exotic({cardarea = G.play, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, before = true})
-end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''function Card:is_face(from_boss)'''
-position = 'after'
-payload = '''if self.ability and self.ability.trading then
-        local eval = self:calculate_exotic({from_boss = from_boss, is_face = true})
-        if eval then
-            return eval
-        end
-    end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''if self.children.use_button then self.children.use_button:remove(); self.children.use_button = nil end'''
-position = 'after'
-payload = '''if self.children.rank_button then self.children.use_button:remove(); self.children.rank_button = nil end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''self.highlighted = is_higlighted'''
-position = 'after'
-payload = '''if self.playing_card then
-    if self.highlighted and self.ability and self.ability.trading and (self.ability.trading.name == "Blank Card") and (self.area == G.hand) then
-        self.children.rank_button = UIBox{
-            definition = G.UIDEF.rank_buttons(self), 
-            config = {align=
-                    ((self.area == G.jokers) or (self.area == G.consumeables)) and "cr" or
-                    "bmi"
-                , offset = 
-                    ((self.area == G.jokers) or (self.area == G.consumeables)) and {x= - 0.4,y=-0.25*G.CARD_H} or
-                    {x=0,y=0.65},
-                parent =self}
-        }
-    elseif self.children.rank_button then
-        self.children.rank_button:remove()
-        self.children.rank_button = nil
-    end
-end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-pattern = '''if destroyed then'''
-position = 'before'
-payload = '''if scoring_hand[i]:calculate_exotic({destroying_card = scoring_hand[i], full_hand = G.play.cards}) == true then destroyed = true end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''function Card:set_perishable(_perishable)'''
-position = 'after'
-payload = '''   if self.ability.force_perish then
-        return
-    end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-pattern = '''check_for_unlock({type = 'hand_contents', cards = G.play.cards})'''
-position = 'after'
-payload = '''G.E_MANAGER:add_event(Event({
-    trigger = 'immediate',
-        func = function()
-            local pool = {}
-            for k=1, #G.play.cards do
-                table.insert(pool, G.play.cards[k])
-                G.play.cards[k]:calculate_exotic({cardarea = G.play, full_hand = G.play.cards, very_before = true})
-            end
-            while #pool > 0 do
-                local card, key = pseudorandom_element(pool, pseudoseed('order'))
-                table.remove(pool, key)
-                card:calculate_exotic({cardarea = G.play, full_hand = G.play.cards, very_before = true, random_order = true})
-            end
-        return true
-    end
-}))'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-pattern = '''if G.GAME.modifiers.debuff_played_cards then'''
-position = 'before'
-payload = '''for k=1, #G.play.cards do
-    G.play.cards[k]:calculate_exotic({cardarea = G.play, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, after = true})
-end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-pattern = '''for i=1, #G.hand.cards do'''
-position = 'after'
-payload = '''   local pc_in_hand = true'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-pattern = '''for i=1, #scoring_hand do'''
-position = 'after'
-payload = '''   local pc_in_scoring = true'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/common_events.lua'
-pattern = '''local ret = {}'''
-position = 'after'
-payload = '''if context.main_scoring and not context.no_trading then
-    local new_context = {no_trading = true}
-    for i, j in pairs(context) do
-        new_context[i] = j
-    end
-    local effects = {eval_card(card, new_context)}
-    if context.scoring_hand then
-        for k=1, #context.scoring_hand do
-            local eval = context.scoring_hand[k]:calculate_exotic({cardarea = context.cardarea, full_hand = G.play.cards, scoring_hand = context.scoring_hand, scoring_name = context.scoring_name, poker_hands = context.poker_hands, other_card = card, individual = true, pc_end_round = context.end_of_round}, {})
-            if eval then 
-                for l = 1, #eval do
-                    table.insert(effects, {eval[l]})
-                end
-            end
-        end
-    end
-    for k=1, #G.hand.cards do
-        local eval = G.hand.cards[k]:calculate_exotic({cardarea = context.cardarea, full_hand = G.play.cards, scoring_hand = context.scoring_hand, scoring_name = context.scoring_name, poker_hands = context.poker_hands, other_card = card, individual = true, pc_end_round = context.end_of_round}, {})
-        if eval then 
-            for l = 1, #eval do
-                table.insert(effects, {eval[l]})
-            end
-        end
-    end
-    local exotic_eval = card:calculate_exotic({cardarea = context.cardarea, full_hand = G.play.cards, scoring_hand = context.scoring_hand, scoring_name = context.scoring_name, poker_hands = context.poker_hands, playing_card_hand = (context.cardarea == G.hand), playing_card_main = (context.cardarea == G.play), pc_end_round = context.end_of_round})
-    if exotic_eval then
-        for l = 1, #exotic_eval do
-            table.insert(effects, {exotic_eval[l]})
-        end
-    end
-    return unpack(effects)
-end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-pattern = '''function end_round()'''
-position = 'after'
-payload = '''   local pc_end_round = true'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-pattern = '''G.RESET_BLIND_STATES = true'''
-position = 'after'
-payload = '''local delete_these = {}
-for i = 1, #G.playing_cards do
-    if G.playing_cards[i].ability.fleeting then
-        table.insert(delete_these, G.playing_cards[i])
-    end
-    G.playing_cards[i].ability.pc_drawn_to_hand = nil
-end
-for i = 1, #delete_these do
-    delete_these[i]:remove()
-end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''local badges = {}'''
-position = 'after'
-payload = '''if loc_vars then loc_vars.collect = (self.ability and self.ability.trading or nil) end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-pattern = '''G.FUNCS.play_cards_from_highlighted = function(e)'''
-position = 'after'
-payload = '''   
-    for i = 1, #G.hand.highlighted do
-        if G.hand.highlighted[i].ability and G.hand.highlighted[i].ability.phantom then
-            G.hand.highlighted[i]:juice_up()
-            G.E_MANAGER:add_event(Event({
-                trigger = 'immediate',
-                func = function()
-                    G.STATE = G.STATES.DRAW_TO_HAND
-                    G.STATE_COMPLETE = false
-                    return true
-                end
-            }))
-            return
-        end
-    end
-    for i = 1, #G.hand.cards do
-        if G.hand.cards[i].ability and G.hand.cards[i].ability.phantom then
-            G.hand.cards[i].ability.phantom = nil
-        end
-    end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''elseif self.sprite_facing == 'back' then'''
-position = 'before'
-payload = '''if self.ability and self.ability.phantom then
-    self.children.center:draw_shader('pc_phantom', nil, self.ARGS.send_to_shader)
-    if self.children.front and self.ability.effect ~= 'Stone Card' and not self.config.center.replace_base_card then
-        self.children.front:draw_shader('pc_phantom', nil, self.ARGS.send_to_shader)
-    end
-end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/common_events.lua'
-pattern = '''--Fill all remaining info if this is the main desc'''
-position = 'before'
-payload = '''if card and card.ability and card.ability.phantom then info_queue[#info_queue+1] = {key = 'phantom', set = 'Other'} end
-if card and card.ability and card.ability.fleeting then info_queue[#info_queue+1] = {key = 'fleeting', set = 'Other'} end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-pattern = '''G.FUNCS.discard_cards_from_highlighted = function(e, hook)'''
-position = 'after'
-payload = '''   for i = 1, #G.hand.cards do
-        if G.hand.cards[i].ability and G.hand.cards[i].ability.phantom then
-            G.hand.cards[i].ability.phantom = nil
-        end
-    end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'blind.lua'
-pattern = '''function Blind:stay_flipped(area, card)'''
-position = 'after'
-payload = '''   
-    if phantom_cards and (area == G.hand) then
-        card.ability.phantom = true
-    end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'game.lua'
-pattern = '''G.GAME.blind:drawn_to_hand()'''
-position = 'before'
-payload = '''phantom_cards = nil
-for i = 1, #G.hand.cards do
-    if G.hand.cards[i].ability.trading and (G.hand.cards[i].ability.already_drawn ~= G.GAME.round) then
-        G.hand.cards[i]:calculate_exotic({drawn = G.hand, facing_blind = G.GAME.facing_blind}, {})
-    end
-end
-'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-pattern = '''if G.GAME.blind.name == 'The Serpent' and'''
-position = 'before'
-payload = '''if G.GAME.pc_hand_size_bonus then
-    if hand_space <= 0 then
-        hand_space = math.max(0, math.min(G.hand.config.card_limit - #G.hand.cards, 0) + G.GAME.pc_hand_size_bonus)
-    else
-        hand_space = hand_space + G.GAME.pc_hand_size_bonus
-    end
-    G.GAME.pc_hand_size_bonus = nil
-end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'cardarea.lua'
-pattern = '''if area == G.discard then'''
-position = 'before'
-payload = '''card.ability.pc_drawn_to_hand = true'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/common_events.lua'
-pattern = '''function copy_card(other, new_card, card_scale, playing_card, strip_edition)'''
-position = 'after'
-payload = '''   local old_fleeting = other.ability and other.ability.fleeting or nil
-    if new_card and new_card.ability then
-        old_fleeting = new_card.ability.fleeting
-    end
-    local new_phantom = other.ability and other.ability.phantom or nil'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/common_events.lua'
-pattern = '''new_card:set_sprites(new_card.config.center)'''
-position = 'before'
-payload = '''new_card.ability.fleeting = old_fleeting
-new_card.ability.phantom = new_phantom'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'game.lua'
-pattern = '''if _de.gold_seal then _g = _de.gold_seal end'''
-position = 'after'
-payload = '''if _de.trade then _t = _de.trade end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'game.lua'
-pattern = '''local keep, _e, _d, _g = true, nil, nil, nil'''
-position = 'after'
-payload = '''local _t = nil'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'game.lua'
-pattern = '''if keep then card_protos[#card_protos+1] = {s=_s,r=_r,e=_e,d=_d,g=_g} end'''
-position = 'after'
-payload = '''if keep then card_protos[#card_protos].t = {t = _t} end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/misc_functions.lua'
-pattern = '''if control.g then _card:set_seal(control.g, true, true) end'''
-position = 'after'
-payload = '''if control.t then _card.ability.trading = G.P_TRADING[control.t];_card:set_sprites(_card.config.center) end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/UI_definitions.lua'
-pattern = '''if v.g then _card:set_seal(v.g, true, true) end'''
-position = 'after'
-payload = '''if v.t then _card.ability.trading = G.P_TRADING[v.t];_card:set_sprites(_card.config.center)  end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/button_callbacks.lua'
-pattern = '''e.config.ref_table:use_consumeable(area)'''
-position = 'after'
-payload = '''for i = 1, #G.hand.cards do
-    G.hand.cards[i]:calculate_exotic({using_consumeable = e.config.ref_table}, {})
-end'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
 target = 'functions/state_events.lua'
 pattern = '''v.ability.discarded = nil'''
 position = 'after'
@@ -692,13 +16,495 @@ match_indent = true
 
 [[patches]]
 [patches.pattern]
+target = 'functions/state_events.lua'
+pattern = '''G.FUNCS.play_cards_from_highlighted = function(e)'''
+position = 'after'
+payload = '''   played_hand = true'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+pattern = '''G.GAME.current_round.discards_left = math.max(0, G.GAME.round_resets.discards + G.GAME.round_bonus.discards)'''
+position = 'before'
+payload = '''if not G.GAME.modifiers["ante_hand_discard_reset"] or boss_ded then'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+pattern = '''G.GAME.current_round.hands_left = (math.max(1, G.GAME.round_resets.hands + G.GAME.round_bonus.next_hands))'''
+position = 'after'
+payload = '''elseif G.GAME.current_round.hands_left and (G.GAME.current_round.hands_left <= 0) then
+    G.GAME.current_round.hands_left = 1
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+pattern = '''G.GAME.current_round.discards_left = math.max(0, G.GAME.round_resets.discards + G.GAME.round_bonus.discards)'''
+position = 'before'
+payload = '''if not G.GAME.modifiers["ante_hand_discard_reset"] then'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+pattern = '''G.GAME.current_round.hands_left = (math.max(1, G.GAME.round_resets.hands + G.GAME.round_bonus.next_hands))'''
+position = 'after'
+payload = '''end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+pattern = '''G.deck:hard_set_T()'''
+position = 'after'
+payload = '''local boss_ded = nil
+if (G.GAME.round_resets.blind_states.Boss == 'Defeated') then
+    boss_ded = true
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''local nosave_shop = nil'''
+position = 'after'
+payload = '''local old_shop_exists = shop_exists
+if G.GAME.modifiers.dungeon then
+    shop_exists = true
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''G.CONTROLLER:snap_to({node = G.shop:get_UIE_by_ID('next_round_button')})'''
+position = 'before'
+payload = '''shop_exists = old_shop_exists
+if not shop_exists and G.GAME.modifiers.dungeon and G.shop_jokers then
+    if G.load_shop_jokers then 
+        nosave_shop = true
+        G.shop_jokers:load(G.load_shop_jokers)
+        for k, v in ipairs(G.shop_jokers.cards) do
+            create_shop_card_ui(v)
+            if v.ability.consumeable then v:start_materialize() end
+            for _kk, vvv in ipairs(G.GAME.tags) do
+                if vvv:apply_to_run({type = 'store_joker_modify', card = v}) then break end
+            end
+        end
+        G.load_shop_jokers = nil
+    elseif not G.GAME.first_shop_buffoon and not G.GAME.banned_keys['p_buffoon_normal_1'] then
+        G.GAME.first_shop_buffoon = true
+        local card = Card(G.shop_jokers.T.x + G.shop_jokers.T.w/2,
+        G.shop_jokers.T.y, G.CARD_W*1.27, G.CARD_H*1.27, G.P_CARDS.empty, G.P_CENTERS['p_buffoon_normal_'..(math.random(1, 2))], {bypass_discovery_center = true, bypass_discovery_ui = true})
+        create_shop_card_ui(card, 'Booster', G.shop_jokers)
+        card.ability.booster_pos = #G.shop_jokers.cards + 1
+        card:start_materialize()
+        G.shop_jokers:emplace(card)
+        card.ability.couponed = true
+        card:set_cost()
+        create_shop_card_ui(card, card.ability.set, G.shop_jokers)
+    end
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''function G.UIDEF.shop()'''
+position = 'after'
+payload = '''   if G.GAME.memory then
+        return G.UIDEF.memory()
+    elseif G.GAME.modifiers.dungeon then
+        return G.UIDEF.loot_shop()
+    end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'blind.lua'
+pattern = '''ease_hands_played(-self.hands_sub)'''
+position = 'after'
+payload = '''G.E_MANAGER:add_event(Event({
+    trigger = 'immediate',
+    func = function()
+        if G.GAME.current_round.hands_left < 1 then
+            G.GAME.current_round.hands_left = 1
+        end
+        return true
+    end
+}))'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'blind.lua'
+pattern = '''ease_discard(-self.discards_sub)'''
+position = 'after'
+payload = '''G.E_MANAGER:add_event(Event({
+    trigger = 'immediate',
+    func = function()
+        if G.GAME.current_round.discards_left < 0 then
+            G.GAME.current_round.discards_left = 1
+        end
+        return true
+    end
+}))'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
 target = 'cardarea.lua'
 pattern = '''if v.ability.forced_selection and not self.highlighted[1] then'''
 position = 'before'
-payload = '''if v.ability.trading and (v.ability.trading.name == "Old Bell") and not v.highlighted and not v.debuff and not (v.ability.forced_selection and not self.highlighted[1]) then
+payload = '''if v.ability.forced_selection and self.highlighted[1] and not v.highlighted then
     self:add_to_highlighted(v)
-    if v.highlighted then
-        v.ability.forced_selection = true
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+pattern = '''G.GAME.round_resets.blind_states.Small = 'Defeated''''
+position = 'after'
+payload = '''                        elseif G.GAME.blind_on_deck == 'Dungeon' then
+                            '''
+match_indent = false
+
+[[patches]]
+[patches.pattern]
+target = 'blind.lua'
+pattern = '''elseif self.name == "Big Blind" then'''
+position = 'before'
+payload = '''elseif self.name == "The Dealer" then
+    return 'Dungeon'
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+pattern = '''G.GAME.skips = (G.GAME.skips or 0) + 1'''
+position = 'after'
+payload = '''if _tag and _tag.config.ref_table then
+    local valid = false
+    if _tag.config.ref_table.key == 'tag_dng_blackjack' then
+        valid = true
+    elseif _tag.config.ref_table.key == 'tag_dng_memory' then
+        valid = true
+    end
+    if valid then
+        local skipped, skip_to = G.GAME.blind_on_deck or 'Small', 
+        G.GAME.blind_on_deck == 'Small' and 'Big' or G.GAME.blind_on_deck == 'Big' and 'Boss' or 'Boss'
+        G.GAME.round_resets.blind_states[skipped] = 'Skipped'
+        G.GAME.round_resets.blind_states[skip_to] = 'Select'
+        G.GAME.blind_on_deck = skip_to
+        play_sound('generic1')
+        G.E_MANAGER:add_event(Event({
+            trigger = 'immediate',
+            func = function()
+            delay(0.3)
+            if SMODS.calculate_context then
+                SMODS.calculate_context({skip_blind = true})
+            else
+                for i = 1, #G.jokers.cards do
+                    G.jokers.cards[i]:calculate_joker({skip_blind = true})
+                end
+                save_run()
+                for i = 1, #G.GAME.tags do
+                    G.GAME.tags[i]:apply_to_run({type = 'immediate'})
+                end
+                for i = 1, #G.GAME.tags do
+                    if G.GAME.tags[i]:apply_to_run({type = 'new_blind_choice'}) then break end
+                end
+            end
+            if _tag.config.ref_table.key == 'tag_dng_blackjack' then
+                dunegon_selection('bl_dng_dealer')
+            elseif _tag.config.ref_table.key == 'tag_dng_memory' then
+                if G.blind_select then 
+                    G.blind_prompt_box:get_UIE_by_ID('prompt_dynatext1').config.object.pop_delay = 0
+                    G.blind_prompt_box:get_UIE_by_ID('prompt_dynatext1').config.object:pop_out(5)
+                    G.blind_prompt_box:get_UIE_by_ID('prompt_dynatext2').config.object.pop_delay = 0
+                    G.blind_prompt_box:get_UIE_by_ID('prompt_dynatext2').config.object:pop_out(5) 
+            
+                    G.E_MANAGER:add_event(Event({
+                    trigger = 'before', delay = 0.2,
+                    func = function()
+                        G.blind_prompt_box.alignment.offset.y = -10
+                        G.blind_select.alignment.offset.y = 40
+                        G.blind_select.alignment.offset.x = 0
+                        return true
+                    end}))
+                    G.E_MANAGER:add_event(Event({
+                    trigger = 'immediate',
+                    func = function()
+                        G.blind_select:remove()
+                        G.blind_prompt_box:remove()
+                        G.blind_select = nil
+                        delay(0.2)
+                        return true
+                    end}))
+                    G.E_MANAGER:add_event(Event({
+                    trigger = 'immediate',
+                    func = function()
+                        G.RESET_JIGGLES = nil
+                        delay(0.4)
+                        G.E_MANAGER:add_event(Event({
+                        trigger = 'immediate',
+                        func = function()
+                            
+                            delay(0.4)
+
+                            G.E_MANAGER:add_event(Event({
+                                trigger = 'immediate',
+                                func = function()
+                                    G.GAME.memory = true
+                                    G.STATE = G.STATES.SHOP
+                                    G.STATE_COMPLETE = false
+                                    return true
+                                end
+                            }))
+                            return true
+                            end
+                        }))
+                        return true
+                        end
+                    }))
+                end
+            end
+            return true
+            end
+        }))
+        return
     end
 end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''config.saved and'''
+position = 'after'
+payload = '''(G and G.GAME and G.GAME.blind and G.GAME.blind.config and G.GAME.blind.config.blind and G.GAME.blind.config.blind.name == "The Dealer") and {n=G.UIT.C, config={padding = 0.05, align = 'cm'}, nodes={
+    {n=G.UIT.R, config={align = 'cm'}, nodes={
+        {n=G.UIT.O, config={object = DynaText({string = {' '..localize('ph_blackjack_lost')..' '}, colours = {G.C.RED}, shadow = true, pop_in = 0, scale = 0.5*scale, silent = true})}}
+    }}
+}} or config.saved and'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''function Card:highlight(is_higlighted)'''
+position = 'after'
+payload = '''   if G.memory_row_1 and ((self.area == G.memory_row_1) or (self.area == G.memory_row_2)) then
+        if (self.facing == 'back') and G.GAME.currently_choosing and G.GAME.memory_cards and not self.debuff then
+            self:flip()
+            table.insert(G.GAME.memory_cards, self)
+            if #G.GAME.memory_cards == 2 then
+                local match = nil
+                if G.GAME.memory_cards[1].config.center.key == G.GAME.memory_cards[2].config.center.key then
+                    play_area_status_text("Match")
+                    match = G.GAME.memory_cards[1].config.center.key
+                end
+                local cards = G.GAME.memory_cards
+                G.GAME.memory_cards = nil
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'immediate',
+                    func = function()
+                        G.E_MANAGER:add_event(Event({
+                            trigger = 'after',
+                            delay = 3,
+                            func = function()
+                                if match then
+                                    cards[1].ability.perma_debuff = true
+                                    cards[2].ability.perma_debuff = true
+                                    if cards[1].ability.consumeable and (G.consumeables.config.card_limit > #G.consumeables.cards) then
+                                        local card = SMODS.create_card {key = match, area = G.consumeables}
+                                        card:add_to_deck()
+                                        G.consumeables:emplace(card)
+                                    elseif cards[1].ability.set == "Joker" and (G.jokers.config.card_limit > #G.jokers.cards) then
+                                        local card = SMODS.create_card {key = match, area = G.jokers}
+                                        card:add_to_deck()
+                                        G.jokers:emplace(card)
+                                    elseif cards[1].ability.set == "Voucher" then
+                                        local card = SMODS.create_card {key = match}
+                                        G.FUNCS.use_card({config = {ref_table = card}})
+                                    end
+                                else
+                                    cards[1]:flip()
+                                    cards[2]:flip()
+                                end
+                                G.GAME.currently_choosing = nil
+                                save_run()
+                                return true
+                            end}))
+                        return true
+                    end
+                }))
+            end
+        end
+        return
+    end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''self.load_shop_vouchers = nil'''
+position = 'after'
+payload = '''G.load_memory_row_1 = nil
+G.load_memory_row_2 = nil'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+pattern = '''G.CONTROLLER.locks.toggle_shop = true'''
+position = 'after'
+payload = '''G.GAME.memory = nil'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'blind.lua'
+pattern = '''self.config.blind = blind or {}'''
+position = 'after'
+payload = '''if G.GAME.modifiers.dungeon then
+    G.GAME.dng_busted = nil
+    G.GAME.hit_limit = 2
+    for i = 1, #(G.enemy_cards or {}) do
+        G.enemy_cards[i]:remove()
+    end
+    G.enemy_cards = {}
+    local suits = {'H', 'S', 'D', 'C'}
+    local ranks = {'2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'}
+    if (blind and blind.name or '') == "Small Blind" then
+        ranks = {'6', '7', '8', '8', '9', '9', 'Q', 'K', 'A'}
+    elseif (blind and blind.name or '') ~= "Big Blind" then
+        ranks = {'3', '3', '3', '5', '7', '7', '7', 'T', 'T', 'J', 'Q', 'K', 'A'}
+    end
+    for _, i in ipairs(suits) do
+        for _, j in ipairs(ranks) do
+            local _card = Card(G.enemy_deck.T.x, G.enemy_deck.T.y, G.CARD_W, G.CARD_H, G.P_CARDS[i .. '_' .. j], G.P_CENTERS['c_base'], {})
+            G.enemy_cards = G.enemy_cards or {}
+            table.insert(G.enemy_cards, _card)
+            G.enemy_deck:emplace(_card)
+        end
+    end
+    G.enemy_deck:shuffle('enemy_deck')
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'blind.lua'
+pattern = '''function Blind:drawn_to_hand()'''
+position = 'after'
+payload = '''   if G.GAME.modifiers.dungeon then
+        G.GAME.negate_hand = nil
+        local total = 0
+        for i = 1, #G.hand.cards do
+            local id = G.hand.cards[i]:get_id()
+            if id > 0 then
+                local rank = SMODS.Ranks[G.hand.cards[i].base.value] or {}
+                local nominal = rank.nominal
+                if rank.key == 'Ace' then
+                    total = total + 1
+                else
+                    total = total + nominal
+                end
+            end
+        end
+        if total > 21 then
+            G.E_MANAGER:add_event(Event({
+                trigger = 'immediate',
+                func = function()
+                    play_area_status_text("Bust (" .. tostring(total) .. ")")
+                    return true
+                end
+            }))
+            G.GAME.dng_busted = true
+        elseif ((#G.deck.cards == 0) and (#G.hand.cards == 0)) then
+            G.STATE = G.STATES.NEW_ROUND
+        end
+    end'''
+match_indent = true 
+
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+pattern = '''G.E_MANAGER:add_event(Event({
+    trigger = 'after',delay = 0.4,'''
+position = 'before'
+payload = '''if G.GAME.negate_hand then
+    mult = -0.5 * mult
+    G.GAME.negate_hand = nil
+    G.E_MANAGER:add_event(Event({
+        trigger = 'before',
+        delay = 0.8,
+        func = function()
+            G.GAME.current_round.current_hand.mult = tostring(mult)
+            G.hand_text_area.mult:update(0)
+            return true
+        end
+    }))
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+pattern = '''ease_hands_played(-1)'''
+position = 'at'
+payload = '''if not G.GAME.modifiers.dungeon then
+    ease_hands_played(-1)
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''self.GAME.starting_params[v.id] = v.value'''
+position = 'at'
+payload = '''if v.id == 'dungeon' then
+    G.hand.config.highlighted_limit = 25
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''   label = localize('b_full_deck'),
+    tab_definition_function = G.UIDEF.view_deck
+},'''
+position = 'after'
+payload = '''G.GAME.modifiers.dungeon and {
+            label = localize('b_full_deck'),
+            tab_definition_function = G.UIDEF.view_enemy_deck
+        },'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''self.discard = CardArea('''
+position = 'before'
+payload = '''self.enemy_deck = CardArea(
+    0, 0,
+    CAI.deck_W,CAI.dexk_H,
+    {card_limit = 520, type = 'deck'})'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''G.deck.T.x = G.TILE_W - G.deck.T.w - 0.5'''
+position = 'before'
+payload = '''G.enemy_deck.T.x = G.TILE_W - G.enemy_deck.T.w - 0.5 + 3*G.CARD_W
+G.enemy_deck.T.y = G.TILE_H - G.enemy_deck.T.h
+'''
 match_indent = true
