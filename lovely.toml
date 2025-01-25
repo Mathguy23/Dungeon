@@ -483,7 +483,7 @@ pattern = '''   label = localize('b_full_deck'),
 },'''
 position = 'after'
 payload = '''G.GAME.modifiers.dungeon and {
-            label = localize('b_full_deck'),
+            label = localize('b_enemy_deck'),
             tab_definition_function = G.UIDEF.view_enemy_deck
         },'''
 match_indent = true
