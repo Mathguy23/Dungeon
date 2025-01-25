@@ -437,8 +437,7 @@ match_indent = true
 [[patches]]
 [patches.pattern]
 target = 'functions/state_events.lua'
-pattern = '''G.E_MANAGER:add_event(Event({
-    trigger = 'after',delay = 0.4,'''
+pattern = '''for i=1, #cards_destroyed do'''
 position = 'before'
 payload = '''if G.GAME.negate_hand then
     mult = -0.5 * mult
