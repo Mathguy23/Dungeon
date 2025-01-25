@@ -568,7 +568,7 @@ G.FUNCS.stand = function(e)
             end
         end
     end
-    while (total < 21) and (aces >= 1) do
+    while (total <= 11) and (aces >= 1) do
         total = total + 10
         aces = aces + 1
     end
